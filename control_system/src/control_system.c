@@ -96,7 +96,7 @@ int main(int argc, const char *argv[])
         else
         {
             fprintf(stderr, "Failed to call traffic_light.Mode.Mode(): ");
-            fprintf(stderr, "req.value = %07x, rcResult = %d", (int)req.value, rcResult);
+            fprintf(stderr, "req.value = %07x, rcResult = %d\n", (int)req.value, rcResult);
         }
     }
 
