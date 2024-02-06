@@ -63,6 +63,9 @@ int main(int argc, const char *argv[])
     /* Request and response structures */
     traffic_light_IMode_FMode_req req;
     traffic_light_IMode_FMode_res res;
+    
+    /* Request result */
+    nk_err_t rcResult;
 
     /* Test loop. */
     req.value = 0;
@@ -75,8 +78,8 @@ int main(int argc, const char *argv[])
          * mode_comp.mode_impl with the value argument. Calling thread is locked
          * until a response is received from the lights gpio.
          */
-        if (traffic_light_IMode_FMode(&proxy.base, &req, NULL, &res, NULL) == rcOk)
-
+        rcResult = traffic_light_IMode_FMode(&proxy.base, &req, NULL, &res, NULL);
+        if (rcOk == rcResult)
         {
             /**
              * Print result value from response
@@ -91,7 +94,10 @@ int main(int argc, const char *argv[])
 
         }
         else
-            fprintf(stderr, "Failed to call traffic_light.Mode.Mode()\n");
+        {
+            fprintf(stderr, "Failed to call traffic_light.Mode.Mode(): ");
+            fprintf(stderr, "req.value = %07x, rcResult = %d", (int)req.value, rcResult);
+        }
     }
 
     return EXIT_SUCCESS;
