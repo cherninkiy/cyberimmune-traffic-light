@@ -38,14 +38,15 @@ request src=traffic_light.ControlSystem
         grant()
 }
 
-/*
+
 request src=traffic_light.ControlSystem 
     dst=traffic_light.LightsGPIO 
     endpoint=lightsGpio.mode 
     method=FMode {
-        assert (message.value != 0x404)        
+        // Solution fo HW1 task 2: Deny two Greens
+        assert (message.value != 0x404)
 }
-*/
+
 
 request src=Einit {
     grant ()
