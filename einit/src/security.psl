@@ -44,7 +44,11 @@ request src=traffic_light.ControlSystem
     endpoint=lightsGpio.mode 
     method=FMode {
         // Solution fo HW1 task 2: Deny two Greens
-        assert (message.value != 0x404)
+        // assert (message.value != 0x404)
+
+        // Solution fo HW1 task 3: Deny two Greens with any other color
+        // (assume blinking, i.e. 8|800|808 is not a color)
+        assert (message.value < 0x404)
 }
 
 
