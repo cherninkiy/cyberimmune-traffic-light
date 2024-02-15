@@ -13,3 +13,5 @@ sim:
 
 clean:
 	rm -rf build
+
+rebuild: clean build

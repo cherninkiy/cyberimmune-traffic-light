@@ -10,6 +10,8 @@
 /* EDL description of the LightsGPIO entity. */
 #include <traffic_light/LightsGPIO.edl.h>
 
+#include <traffic_light/IState.idl.h>
+
 #include <assert.h>
 
 /* Type of interface implementing object. */
@@ -54,6 +56,70 @@ static struct traffic_light_IMode *CreateIModeImpl(rtl_uint32_t step)
     impl.step = step;
 
     return &impl.base;
+}
+
+int report_state(nk_uint32_t value);
+int report_state(nk_uint32_t value)
+{
+    NkKosTransport transport;
+    struct traffic_light_IState_proxy proxy;
+
+    /**
+     * Get the Diagnostics IPC handle of the connection named
+     * "diagnostics_connection".
+     */
+    Handle handle = ServiceLocatorConnect("diagnostics_connection");
+    assert(handle != INVALID_HANDLE);
+
+    /* Initialize IPC transport for interaction with the diagnostics entity. */
+    NkKosTransport_Init(&transport, handle, NK_NULL, 0);
+
+    /**
+     * Get Runtime Interface ID (RIID) for interface traffic_light.State.state.
+     * Here mode is the name of the traffic_light.State component instance,
+     * traffic_light.State.state is the name of the IState interface implementation.
+     */
+    nk_iid_t riid = ServiceLocatorGetRiid(handle, "diagnostics.state");
+    assert(riid != INVALID_RIID);
+
+    /**
+     * Initialize proxy object by specifying transport (&transport)
+     * and lights gpio interface identifier (riid). Each method of the
+     * proxy object will be implemented by sending a request to the lights gpio.
+     */
+    traffic_light_IState_proxy_init(&proxy, &transport.base, riid);
+
+    /* Request and response structures */
+    traffic_light_IState_FState_req req;
+    traffic_light_IState_FState_res res;
+
+
+    req.value = value;
+
+    /**
+     * Call Mode interface method.
+     * Lights GPIO will be sent a request for calling Mode interface method
+     * mode_comp.mode_impl with the value argument. Calling thread is locked
+     * until a response is received from the lights gpio.
+     */
+    if (traffic_light_IState_FState(&proxy.base, &req, NULL, &res, NULL) == rcOk)
+    {
+        /**
+         * Print result value from response
+         * (result is the output argument of the Mode method).
+         */
+        fprintf(stderr, "state = %0x\n", (int) res.result);
+        /**
+         * Include received result value into value argument
+         * to resend to lights gpio in next iteration.
+         */
+        req.value = res.result;
+
+    }
+    else
+        fprintf(stderr, "Failed to call traffic_light.State.State()\n");
+
+    return 0;
 }
 
 /* Lights GPIO entry point. */
@@ -130,6 +196,10 @@ int main(void)
                                &res_arena) != NK_EOK) {
             fprintf(stderr, "nk_transport_reply error\n");
         }
+
+        /* Solution for Homework2 Task2 - Report state  */
+        //report_state(0x42);
+
     }
     while (true);
 

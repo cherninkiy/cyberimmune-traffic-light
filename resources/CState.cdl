@@ -1,0 +1,8 @@
+/* Definition of the `State` component. */
+
+component traffic_light.CState
+
+endpoints {
+    /* Declaration of a named implementation of the "State" interface. */
+    state : traffic_light.IState
+}

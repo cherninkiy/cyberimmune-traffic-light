@@ -1,0 +1,8 @@
+/* Package with an "IState" interface declaration. */
+
+package traffic_light.IState
+
+interface {
+    /* IState interface method */
+    FState(in UInt32 value, out UInt32 result);
+}
