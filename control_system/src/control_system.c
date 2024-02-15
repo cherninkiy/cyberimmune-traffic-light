@@ -82,7 +82,7 @@ int main(int argc, const char *argv[])
              * Print result value from response
              * (result is the output argument of the Mode method).
              */
-            fprintf(stderr, "result = %0x\n", (int) res.result);
+            fprintf(stderr, "result = 0x%08x\n", (int) res.result);
             /**
              * Include received result value into value argument
              * to resend to lights gpio in next iteration.

@@ -63,14 +63,14 @@
 
 ![Diagnostics Entity](docs/day2-hw/added_diagnostics_entity.png)
 
-Отправить все свои изменения в свой репозиторий на github в ветку [day2-homework-diagnostics-dummy](https://github.com/cherninkiy/cyberimmune-traffic-light/tree/day2-homework-diagnostics-dummy)
-
-2. Необязательное задание1 повышенной сложности:
+2. ✅ Необязательное задание1 повышенной сложности:
 реализовать IPC взаимодействие между LightsGPIO и Diagnostics. Ожидаемый
 результат: тестовое сообщение от LightsGPIO получено в Diagnostics
 Примечание: для этого задания может быть полезным посмотреть код примера из
 SDK secure_logger
 
-3. Отправить все свои изменения в свой репозиторий на github в ветку day2-homework-
-diagnostics-dummy для задания 1, если сделано и задание 2, то в ветку day2-
-homework-diagnostics-functional
+Реализовано взаимодействие сущностей lights_gpio и diagnostics.
+
+![Diagnostics Entity](docs/day2-hw/added_lights_to_diagnostics_connection.png)
+
+3. ✅ Отправить все свои изменения в свой репозиторий на github в ветку [day2-homework-diagnostics-dummy](https://github.com/cherninkiy/cyberimmune-traffic-light/tree/day2-homework-diagnostics-dummy) для задания 1, если сделано и задание 2, то в ветку [day2-homework-diagnostics-functional](https://github.com/cherninkiy/cyberimmune-traffic-light/tree/day2-homework-diagnostics-functional)

@@ -108,7 +108,7 @@ int report_state(nk_uint32_t value)
          * Print result value from response
          * (result is the output argument of the Mode method).
          */
-        fprintf(stderr, "state = %0x\n", (int) res.result);
+        fprintf(stderr, "state = 0x%08x\n", (int) res.result);
         /**
          * Include received result value into value argument
          * to resend to lights gpio in next iteration.
@@ -198,7 +198,7 @@ int main(void)
         }
 
         /* Solution for Homework2 Task2 - Report state  */
-        //report_state(0x42);
+        report_state(req.lightsGpio_mode.FMode.value);
 
     }
     while (true);

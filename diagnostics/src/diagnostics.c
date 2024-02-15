@@ -94,7 +94,7 @@ int main(void)
      * which is the number by which the input value is increased.
      */
     traffic_light_CState_component component;
-    traffic_light_CState_component_init(&component, CreateIStateImpl(0x1000000));
+    traffic_light_CState_component_init(&component, CreateIStateImpl(0x4200000));
 
     /* Initialize lights gpio entity dispatcher. */
     traffic_light_Diagnostics_entity entity;
