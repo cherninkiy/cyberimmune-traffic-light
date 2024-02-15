@@ -64,8 +64,7 @@
 ![Diagnostics Entity](docs/day2-hw/added_diagnostics_entity.png)
 
 Отправить все свои изменения в свой репозиторий на github в ветку [day2-homework-
-diagnostics-dummy](https://github.com/cherninkiy/cyberimmune-traffic-light/tree/day2-homework-
-diagnostics-dummy)
+diagnostics-dummy](https://github.com/cherninkiy/cyberimmune-traffic-light/tree/day2-homework-diagnostics-dummy)
 
 2. Необязательное задание1 повышенной сложности:
 реализовать IPC взаимодействие между LightsGPIO и Diagnostics. Ожидаемый
