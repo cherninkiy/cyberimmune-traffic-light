@@ -1,0 +1,27 @@
+/* Package with an "ITrafficMode" interface declaration. */
+
+package traffic_light.ITrafficMode
+
+const UInt32 MaxModeLength = 16;
+typedef string<MaxModeLength> ModeName;
+
+const UInt32 MaxColorLength = 16;
+typedef string<MaxColorLength> ModeColor;
+
+struct TrafficMode {
+    // 'unregulated' | 'regulated' | 'manual'
+    ModeName mode;
+    // 'green' duration for direction1 in 'regulated' mode
+    UInt32 duration1;
+    // color for direction1 in 'manual' mode
+    ModeColor color1;
+    // 'green' duration for direction2 in 'regulated' mode
+    UInt32 duration2;
+    // color for direction2 in 'manual' mode
+    ModeColor color2;
+}
+
+interface {
+    /* ITrafficMode interface method */
+    GetTrafficMode(out TrafficMode mode);
+}

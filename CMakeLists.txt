@@ -79,8 +79,8 @@ nk_build_cdl_files (traffic_light_cdl_files IDL_TARGET traffic_light_idl_files N
 nk_build_idl_files (traffic_light_idl_files NK_MODULE "traffic_light" IDL "${RESOURCES}/idl/IEventLog.idl")
 nk_build_cdl_files (traffic_light_cdl_files IDL_TARGET traffic_light_idl_files NK_MODULE "traffic_light" CDL "${RESOURCES}/cdl/EventLog.cdl")
 
-# nk_build_idl_files (traffic_light_idl_files NK_MODULE "traffic_light" IDL "${RESOURCES}/idl/ISysHealth.idl")
-# nk_build_cdl_files (traffic_light_cdl_files IDL_TARGET traffic_light_idl_files NK_MODULE "traffic_light" CDL "${RESOURCES}/cdl/SysHealth.cdl")
+nk_build_idl_files (traffic_light_idl_files NK_MODULE "traffic_light" IDL "${RESOURCES}/idl/ITrafficMode.idl")
+nk_build_cdl_files (traffic_light_cdl_files IDL_TARGET traffic_light_idl_files NK_MODULE "traffic_light" CDL "${RESOURCES}/cdl/TrafficMode.cdl")
 
 nk_build_edl_files (traffic_light_cross_checker_edl_files CDL_TARGET traffic_light_cdl_files NK_MODULE "traffic_light" EDL "${RESOURCES}/edl/CrossChecker.edl")
 nk_build_edl_files (traffic_light_diagnostics_edl_files CDL_TARGET traffic_light_cdl_files NK_MODULE "traffic_light" EDL "${RESOURCES}/edl/Diagnostics.edl")

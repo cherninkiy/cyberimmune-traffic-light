@@ -45,6 +45,7 @@
         "response-parser.h": "c",
         "json.h": "c",
         "ioctl.h": "c",
-        "crossmode_proxy.h": "c"
+        "crossmode_proxy.h": "c",
+        "itrafficmode.idl.h": "c"
     }
 }

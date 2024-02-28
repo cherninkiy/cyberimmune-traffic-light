@@ -1,5 +1,5 @@
 entity traffic_light.CrossChecker
 
 components {
-    crossChecker : traffic_light.CrossMode
+    crossMode : traffic_light.CrossMode
 }

@@ -1,5 +1,5 @@
 entity traffic_light.Diagnostics
 
 components {
-    diagnostics : traffic_light.EventLog
+    eventLog : traffic_light.EventLog
 }

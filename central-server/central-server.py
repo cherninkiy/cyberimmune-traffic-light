@@ -1,41 +1,69 @@
 from bottle import run, get, post, request, route, response
 from json import dumps
 
+
 @get('/test')
 def process_test():
-    return "This is dummy central server. Test passed\n"
+    return '{"result": "test passed"}'
+
 
 @route('/mode/<tl_id>', method = 'GET')
 def process_test(tl_id):
-    print(f"requested mode for TL with ID {tl_id}")
-    mode = { "request_id": "AAA-BBB",
-             "direction_1": {
-                 "red_duration_sec": 99,
-                 "yellow_duration_sec": 2,
-                 "green_duration_sec": 15
-             }
-           }
+    global tl_mode
+    print(f'Requested mode for TL with ID {tl_id}\n{tl_mode}')
     response.content_type = 'application/json'
-    return dumps(mode)
+    return dumps(tl_mode)
+
+
+@post('/manual')
+def process_kos():
+    data = request.json
+
+    print(f'Manual mode request:\n{data}\n')
+
+    if not 'mode' in data:
+        print(f'Bad request: mode not set\n')
+        result ={"result": "error", "error": "mode not set"}
+        return dumps(result)
+    
+    if data['mode'] not in ['unregulated', 'regulated', 'manual']:
+        print(f'Bad request: invalid mode="{data["mode"]}"\n')
+        return f'Bad request: invalid mode="{data["mode"]}\n'
+
+    if not 'direction_1' in data:
+        print(f'Bad request: direction_1 not set\n')
+        result ={"result": "error", "error": "direction_1 not set"}
+        return dumps(result)
+
+    if not 'direction_2' in data:
+        print(f'Bad request: direction_2 not set\n')
+        result ={"result": "error", "error": "direction_2 not set"}
+        return dumps(result)
+
+    global tl_mode
+    tl_mode = data
+
+    result ={"result": "success", "event": "mode changed"}
+    return dumps(result)
 
 
 @post('/diagnostics')
 def process_kos():
     tl_data = request.json
+    print(f'Received diagnostics:\n{tl_data}\n')
+    result ={"result": "success", "event": "diagnostics received"}
+    return dumps(result)
 
-    # print the dictionary
-    print(f"\n{tl_data}\n")
 
-    # and/or extract data and print nicer
-    tl_id   = tl_data["tl-id"]
-    tl_status = tl_data["tl-status"]
-    tl_mode_id = tl_data["tl-mode-id"]
-
-    print(f"tl-id: {tl_id}\n"
-          f"tl-status: {tl_status}\n"
-          f"tl-mode-id: {tl_mode_id}\n"
-          )
-    return "TL diagnostics received ok\n"
-
+tl_mode = {
+    # 'unregulated' | 'regulated' | 'manual'
+    'mode': 'regulated',
+    # if mode == 'regulated' then green light duration
+    # if mode == 'manual' then color
+    'direction_1': 30,
+    # if mode == 'regulated' then green light duration
+    # if mode == 'manual' then color
+    'direction_2': 30
+}
 
 run(host='0.0.0.0', port=8081, debug=True)

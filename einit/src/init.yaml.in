@@ -4,8 +4,6 @@ entities:
   env:
     VFS_NETWORK_BACKEND: client:kl.VfsNet
   connections:
-  - target: traffic_light.ControlSystem
-    id: communication_channel
   - target: traffic_light.Diagnostics
     id: diagnostics_channel
   - target: kl.VfsNet
@@ -15,7 +13,9 @@ entities:
 - name: traffic_light.ControlSystem
   connections:
   - target: traffic_light.CrossChecker
-    id: crossControl_channel
+    id: crossmode_channel
+  - target: traffic_light.Connector
+    id: trafficmode_channel
   - target: traffic_light.Diagnostics
     id: diagnostics_channel
 # The `CrossChecker` entity can call `LightsGPIO's` and `Diagnostics`

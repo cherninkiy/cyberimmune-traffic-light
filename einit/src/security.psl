@@ -119,8 +119,16 @@ request {
 
 // Request messages: ControlSystem -> CrossChecker
 request src=traffic_light.ControlSystem 
+        dst=traffic_light.Connector 
+        endpoint=trafficMode.trafficMode 
+        method=GetTrafficMode {
+    grant()
+}
+
+// Request messages: ControlSystem -> CrossChecker
+request src=traffic_light.ControlSystem 
         dst=traffic_light.CrossChecker 
-        endpoint=crossChecker.crossMode 
+        endpoint=crossMode.crossMode 
         method=SetCrossMode {
 
     // Deny all "green" combintaions except                   {["green", "red"], ["red", "green"]}
@@ -219,7 +227,7 @@ request src=traffic_light.CrossChecker
 
 // Request messages: ANY -> Diagnostics
 request dst=traffic_light.Diagnostics 
-        endpoint=diagnostics.eventLog 
+        endpoint=eventLog.eventLog 
         method=Collect {
 
     match src=traffic_light.CrossChecker { grant () }

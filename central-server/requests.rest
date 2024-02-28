@@ -1,4 +1,4 @@
-### test connection
+### test request
 
 GET http://localhost:8081/test HTTP/1.1
 
@@ -17,4 +17,47 @@ content-type: application/json
     "tl-id":"12345", 
     "tl-status": "ok", 
     "tl-mode-id": "aaabbbccc"
+}
+
+
+### post manual mode
+POST http://localhost:8081/manual HTTP/1.1
+content-type: application/json
+
+{
+    "mode":"manual", 
+    "direction_1": "red", 
+    "direction_2": "red"
+}
+
+
+### post unregulated mode
+POST http://localhost:8081/manual HTTP/1.1
+content-type: application/json
+
+{
+    "mode":"regulated", 
+    "direction_1": 30, 
+    "direction_2": 30
+}
+
+
+### post regulated mode
+POST http://localhost:8081/manual HTTP/1.1
+content-type: application/json
+
+{
+    "mode":"manual", 
+    "direction_1": "red-yellow", 
+    "direction_2": "yellow"
+}
+
+### post regulated mode
+POST http://localhost:8081/manual HTTP/1.1
+content-type: application/json
+
+{
+    "mode":"manual", 
+    "direction_1": "green", 
+    "direction_2": "red"
 }

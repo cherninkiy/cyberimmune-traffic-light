@@ -7,8 +7,7 @@ include (platform/nk)
 project_header_default ("STANDARD_GNU_11:YES" "STRICT_WARNINGS:NO")
 
 add_executable (Connector "src/connector.c" "src/response-parser.c")
-# add_dependencies (Connector traffic_light_idl_files traffic_light_connector_edl_files)
-add_dependencies (Connector traffic_light_connector_edl_files)
+add_dependencies (Connector traffic_light_idl_files traffic_light_connector_edl_files)
 
 #set_target_properties (Connector PROPERTIES LINK_FLAGS "-Ttext 0x00800000")
 

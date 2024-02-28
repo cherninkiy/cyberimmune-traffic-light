@@ -19,7 +19,13 @@ static const char EntityName[] = "Diagnostics";
 // Type of interface implementing object
 typedef struct IEventLogImpl {
     struct IEventLog base;     /* Base interface of object */
-    rtl_uint32_t state;        /* Extra parameters */
+    rtl_uint32_t stateControlSystem;  /* Extra parameters */
+    rtl_uint32_t stateConnector;      /* Extra parameters */
+    rtl_uint32_t stateCrossChecker;   /* Extra parameters */
+    rtl_uint32_t stateLightsGPIO1;    /* Extra parameters */
+    rtl_uint32_t stateLightsGPIO2;    /* Extra parameters */
+
+    // ISysHealth_proxy sysHealthProxy;
 } IEventLogImpl;
 
 // State method implementation
@@ -31,21 +37,43 @@ static nk_err_t Collect_impl(struct IEventLog *self,
 {
     IEventLogImpl *impl = (IEventLogImpl *)self;
 
-    impl->state = req->code;
-
     nk_size_t size = 0;
 
     // Get event source
-    const nk_char_t *source = nk_arena_get(nk_char_t, req_arena, &req->source, &size);
+    const nk_char_t *source = nk_arena_get(nk_char_t, req_arena, &req->event.source, &size);
     nk_assert(size > 0);
 
     // Get event text
-    const nk_char_t *text = nk_arena_get(nk_char_t, req_arena, &req->text, &size);
+    const nk_char_t *text = nk_arena_get(nk_char_t, req_arena, &req->event.text, &size);
     nk_assert(size > 0);
 
     // Print event
     fprintf(stderr, "\x1B[32m%-13s [INFO ] Diagnostic event: req={\"code\": %d, \"source\": \"%s\", \"state\": %s}\x1B[0m\n",
-                    EntityName, req->code, source, text);
+                    EntityName, req->event.code, source, text);
+
+    if (nk_strcmp(source, "ControlSystem") == 0) {
+        impl->stateControlSystem = req->event.code;
+    }
+    if (nk_strcmp(source, "Connector") == 0) {
+        impl->stateConnector = req->event.code;
+    }
+    if (nk_strcmp(source, "CrossChecker") == 0) {
+        impl->stateCrossChecker = req->event.code;
+    }
+    if (nk_strcmp(source, "LightsGPIO1") == 0) {
+        impl->stateLightsGPIO1 = req->event.code;
+    }
+    if (nk_strcmp(source, "LightsGPIO2") == 0) {
+        impl->stateLightsGPIO2 = req->event.code;
+    }
+
+    nk_uint32_t state = impl->stateControlSystem | impl->stateConnector
+        | impl->stateCrossChecker | impl->stateLightsGPIO1 | impl->stateLightsGPIO2;
+
+    if (nk_strcmp(source, "ControlSystem") != 0) {
+        // Send data to ControlSystem
+        // SelfDiagnostic(&impl->sysHealthProxy, state);
+    }
 
     return NK_EOK;
 }
@@ -61,15 +89,20 @@ static struct IEventLog* CreateIEventLogImpl()
     // Interface implementing object
     static struct IEventLogImpl impl = {
         .base = {&ops},
-        .state = 0
+        .stateControlSystem = -1,
+        .stateConnector = -1,
+        .stateCrossChecker = -1,
+        .stateLightsGPIO1 = -1,
+        .stateLightsGPIO2 = -1
     };
+
+    // SysHealthProxy_Init(&impl.sysHealthProxy);
 
     return &impl.base;
 }
 
 // Diagnostics entry point
-int main(void)
-{
+int main(void) {
     // IEventLog implementation instance;
     IEventLog* impl = CreateIEventLogImpl();
 
@@ -100,7 +133,8 @@ int main(void)
     NkKosTransport transport;
     NkKosTransport_Init(&transport, handle, NK_NULL, 0);
 
-    // fprintf(stderr, "%-13s [DEBUG] Hello I'm Diagnostics!\n", EntityName);
+    fprintf(stderr, "%-13s [DEBUG] Hello I'm Diagnostics!\n", EntityName);
+    IEventLogImpl* selfDiagnostic = (IEventLogImpl*)impl;
 
     // Dispatch loop
     do {

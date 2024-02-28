@@ -18,6 +18,5 @@ struct EventRecord {
 
 interface {
     /* IEventMsg interface method */
-    // Collect(in EventRecord event);
-    Collect(in EventCode code, in EventSource source, in EventText text);
+    Collect(in EventRecord event);
 }

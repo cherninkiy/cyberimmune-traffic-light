@@ -4,11 +4,11 @@
 
 #include "response-parser.h"
 
-static void print_depth_shift(int depth)
-{
+static traffic_light_mode traffic_light_resp;
+
+static void print_depth_shift(int depth) {
     int j;
-    for (j = 0; j < depth; j++)
-    {
+    for (j = 0; j < depth; j++) {
         printf(" ");
     }
 }
@@ -16,87 +16,60 @@ static void print_depth_shift(int depth)
 static void process_value(json_value *value, int depth);
 
 union {
-    struct
-    {
-        unsigned int is_mode_id : 1;
-        unsigned int is_direction : 1;
-        unsigned int is_red_duration : 1;
-        unsigned int is_yellow_duration : 1;
-        unsigned int is_green_duration : 1;
+    struct {
+        unsigned int is_mode : 1;
+        unsigned int is_direction_1 : 1;
+        unsigned int is_direction_2 : 1;
     };
     unsigned int flags;
 } update_modes;
 
-
-void update_modes_field(char *field)
-{
+void update_modes_field(char *field) {
     update_modes.flags = 0;
-    if (strcmp("request_id", field) == 0)
-    {
-        update_modes.is_mode_id = 1;
-    }
-    else if (strcmp("direction_1", field) == 0)
-    {
-        traffic_light_mode.direction = 1;
+    if (strcmp("mode", field) == 0) {
+        update_modes.is_mode = 1;
+    } else if (strcmp("direction_1", field) == 0) {
+        update_modes.is_direction_1 = 1;
+        // traffic_light_resp.is_direction_1 = 1;
         fprintf(stderr, "updating configuration for direction 1\n");
-    }
-    else if (strcmp("direction_2", field) == 0)
-    {
-        traffic_light_mode.direction = 2;
+    } else if (strcmp("direction_2", field) == 0) {
+        update_modes.is_direction_2 = 1;
+        // traffic_light_resp.is_direction_2 = 2;
         fprintf(stderr, "updating configuration for direction 2\n");
     }
-    else if (strcmp("red_duration_sec", field) == 0)
-    {
-        update_modes.is_red_duration = 1;
-    }
-    else if (strcmp("yellow_duration_sec", field) == 0)
-    {
-        update_modes.is_yellow_duration = 1;
-    }
-    else if (strcmp("green_duration_sec", field) == 0)
-    {
-        update_modes.is_green_duration = 1;
+}
+
+void update_field_values_string(char *value) {
+    if (update_modes.is_mode) {
+        strncpy(traffic_light_resp.mode, value, MAX_MODE_LEN);
+        fprintf(stderr, "updated mode: %s\n", traffic_light_resp.mode);
+    } else if (update_modes.is_direction_1) {
+        strncpy(traffic_light_resp.direction_1_color, value, MAX_MODE_LEN);
+        fprintf(stderr, "updated direction_1_color: %s\n", traffic_light_resp.direction_1_color);
+    } else if (update_modes.is_direction_2) {
+        strncpy(traffic_light_resp.direction_2_color, value, MAX_MODE_LEN);
+        fprintf(stderr, "updated direction_2_color: %s\n", traffic_light_resp.direction_2_color);
     }
 }
 
-void update_field_values_string(char *value)
-{
-    if (update_modes.is_mode_id)
-    {
-        strncpy(traffic_light_mode.mode_id, value, MAX_MODE_LEN);
-        fprintf(stderr, "updated mode id: %s\n", traffic_light_mode.mode_id);
-    }
-}
-
-void update_field_values_int(int value)
-{
-    if (update_modes.is_red_duration)
-    {
-        traffic_light_mode.red_duration = value;
-        fprintf(stderr, "updated red duration to %d\n", traffic_light_mode.red_duration);
-    }
-    else if (update_modes.is_yellow_duration)
-    {
-        traffic_light_mode.yellow_duration = value;
-        fprintf(stderr, "updated yellow duration to %d\n", traffic_light_mode.yellow_duration);
-    }
-    else if (update_modes.is_green_duration)
-    {
-        traffic_light_mode.green_duration = value;
-        fprintf(stderr, "updated green duration to %d\n", traffic_light_mode.green_duration);
+void update_field_values_int(int value) {
+    if (update_modes.is_direction_1) {
+        traffic_light_resp.direction_1_duration = value;
+        fprintf(stderr, "updated direction_1_duration: %s\n", traffic_light_resp.direction_1_duration);
+    } else if (update_modes.is_direction_2) {
+        traffic_light_resp.direction_2_duration = value;
+        fprintf(stderr, "updated direction_2_duration: %s\n", traffic_light_resp.direction_2_duration);
     }
 }
 
 static void process_object(json_value *value, int depth)
 {
     int length, x;
-    if (value == NULL)
-    {
+    if (value == NULL) {
         return;
     }
     length = value->u.object.length;
-    for (x = 0; x < length; x++)
-    {
+    for (x = 0; x < length; x++) {
         D(print_depth_shift(depth);)
         D(printf("object[%d].name = %s\n", x, value->u.object.values[x].name);)
         update_modes_field(value->u.object.values[x].name);
@@ -104,33 +77,26 @@ static void process_object(json_value *value, int depth)
     }
 }
 
-static void process_array(json_value *value, int depth)
-{
+static void process_array(json_value *value, int depth) {
     int length, x;
-    if (value == NULL)
-    {
+    if (value == NULL) {
         return;
     }
     length = value->u.array.length;
     D(printf("array\n");)
-    for (x = 0; x < length; x++)
-    {
+    for (x = 0; x < length; x++) {
         process_value(value->u.array.values[x], depth);
     }
 }
 
-static void process_value(json_value *value, int depth)
-{
-    if (value == NULL)
-    {
+static void process_value(json_value *value, int depth) {
+    if (value == NULL) {
         return;
     }
-    if (value->type != json_object)
-    {
+    if (value->type != json_object) {
         print_depth_shift(depth);
     }
-    switch (value->type)
-    {
+    switch (value->type) {
     case json_none:
         D(printf("none\n");)
         break;
@@ -160,22 +126,27 @@ static void process_value(json_value *value, int depth)
     }
 }
 
-int parse_response(char *response)
-{
+int parse_response(char *response, traffic_light_mode *mode) {
+
+    memset(traffic_light_resp.mode, 0, MAX_MODE_LEN);
+    memset(traffic_light_resp.direction_1_color, 0, MAX_COLOR_LEN);
+    memset(traffic_light_resp.direction_2_color, 0, MAX_COLOR_LEN);
+
+    traffic_light_resp.direction_1_duration = 0;
+    traffic_light_resp.direction_2_duration = 0;
+
     int data_size;
     json_char *json;
     json_value *value;
 
-    fprintf(stderr, "data for parsing:\n%s\n", response);
+    // fprintf(stderr, "data for parsing:\n%s\n", response);
+
     // strip everything before the first opening bracket "{"
     data_size = strlen(response);
-    for (int i = 0; i < data_size; i++)
-    {
-        if (response[i] == "{"[0])
-        {
+    for (int i = 0; i < data_size; i++) {
+        if (response[i] == "{"[0]) {
             int json_length = 0;
-            for (int j = 0; j < data_size - i; j++, json_length++)
-            {
+            for (int j = 0; j < data_size - i; j++, json_length++) {
                 response[j] = response[i + j];
             }
             response[json_length] = 0;
@@ -183,15 +154,14 @@ int parse_response(char *response)
         }
     }
 
-    fprintf(stderr, "--------------------------------\n\n");
-    fprintf(stderr, "stripped data for parsing:\n%s\n", response);
+    // fprintf(stderr, "--------------------------------\n\n");
+    // fprintf(stderr, "stripped data for parsing:\n%s\n", response);
 
     json = (json_char *)response;
 
     value = json_parse(json, data_size);
 
-    if (value == NULL)
-    {
+    if (value == NULL) {
         fprintf(stderr, "Unable to parse data\n%s\n", response);
         free(response);
         return 1;
@@ -199,5 +169,19 @@ int parse_response(char *response)
         process_value(value, 0);
         json_value_free(value);
     }
+
+    memset(mode->mode, 0, MAX_MODE_LEN);
+    strncpy(mode->mode, traffic_light_resp.mode, MAX_MODE_LEN);
+
+    mode->direction_1_duration = traffic_light_resp.direction_1_duration;
+
+    memset(mode->direction_1_color, 0, MAX_COLOR_LEN);
+    strncpy(mode->direction_1_color, traffic_light_resp.direction_1_color, MAX_COLOR_LEN);
+
+    mode->direction_2_duration = traffic_light_resp.direction_2_duration;
+
+    memset(mode->direction_2_color, 0, MAX_COLOR_LEN);
+    strncpy(mode->direction_2_color, traffic_light_resp.direction_2_color, MAX_COLOR_LEN);
+
     return 0;
 }

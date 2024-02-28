@@ -7,156 +7,87 @@
 #include <coresrv/nk/transport-kos.h>
 #include <coresrv/sl/sl_api.h>
 #include <kos/thread.h>
-#include <nk/arena.h>
 
 #define NK_USE_UNQUALIFIED_NAMES
-
-// ITrafficMode Client
-#include <traffic_light/ITrafficMode.idl.h>
-#include "response-parser.h"
 
 // ICrossMode Client
 #include "color_defs.h"
 #include "crossmode_proxy.h"
-
 // IEventLog Client
 #include "eventlog_proxy.h"
 
 static const char EntityName[] = "ControlSystem";
 
-typedef struct TrafficModeProxy {
-    // TODO: Exclude if proxy releases all resources
-    NkKosTransport transport;
-    // TODO: Exclude if proxy releases all resources
-    Handle channel;
+// // ISysHealth implementing type
+// typedef struct ISysHealthImpl {
+//     // Base interface of object
+//     struct ISysHealth base;
 
-    ITrafficMode_proxy proxy;
-} TrafficModeProxy;
+//     // CrossChecker.CrossMode
+//     CrossModeProxy crossCheckerProxy;
 
-typedef struct TrafficModeData {
-    // 'unregulated' | 'regulated' | 'manual'
-    nk_char_t mode[ITrafficMode_MaxModeLength];
-    // 'green' duration for direction1 in 'regulated' mode
-    nk_uint32_t duration1;
-    // color for direction1 in 'manual' mode
-    nk_char_t color1[ITrafficMode_MaxColorLength];
-    // 'green' duration for direction2 in 'regulated' mode
-    nk_uint32_t duration2;
-    // color for direction2 in 'manual' mode
-    nk_char_t color2[ITrafficMode_MaxColorLength];
-} TrafficModeData;
-
-int TrafficModeProxy_Init(TrafficModeProxy *client, const char *channelName, const char *interfaceName);
-
-nk_err_t TrafficModeProxy_GetTrafficMode(TrafficModeProxy *client, TrafficModeData *trafficMode);
-
-int main(int argc, char** argv) {
-    TrafficModeProxy trafficModeProxy;
-    TrafficModeProxy_Init(&trafficModeProxy, "trafficmode_channel", "trafficMode.trafficMode");
-
-    CrossModeProxy crossModeProxy;
-    CrossModeProxy_Init(&crossModeProxy, "crossmode_channel", "crossMode.crossMode");
-
-    EventLogProxy eventLogProxy;
-    EventLogProxy_Init(&eventLogProxy);
-    LogEvent(&eventLogProxy, 0, EntityName, "\"Hello I'm ControlSystem!\"");
-
-    TrafficModeData trafficMode;
-    do {
-        LogEvent(&eventLogProxy, 0, EntityName, "\"Hello I'm ControlSystem!\"");
+//     // Diagnostics
+//     EventLogProxy logProxy;
+// } ISysHealthImpl;
 
 
-        TrafficModeProxy_GetTrafficMode(&trafficModeProxy, &trafficMode);
+// // ICrossMod.SetCrossMode method implementation
+// static nk_err_t GetHealth_impl(struct ISysHealth *self,
+//                                const struct ISysHealth_GetHealth_req *req,
+//                                const struct nk_arena *req_arena,
+//                                struct ISysHealth_GetHealth_res *res,
+//                                struct nk_arena *res_arena)
+// {
+//     ISysHealthImpl *impl = (ISysHealthImpl *)self;
 
-        if (nk_strcmp(trafficMode.mode, "unregulated") == 0) {
-            nk_uint32_t unregulatedMode = ICrossMode_Direction1Yellow 
-                                        | ICrossMode_Direction1Blink
-                                        | ICrossMode_Direction2Yellow
-                                        | ICrossMode_Direction2Blink;
-            CrossModeProxy_SetCrossMode(&crossModeProxy, unregulatedMode);
-        }
-        
-        if (nk_strcmp(trafficMode.mode, "regulated") == 0) {
-            CrossModeProxy_SetCrossMode(&crossModeProxy, 0x0C0C);
-        }
+//     // const char *direction1Color = GetColorName(req->mode & 0xFF);
+//     // const char *direction2Color = GetColorName((req->mode >> 8) & 0xFF);
+//     // fprintf(stderr, "%-13s [DEBUG] Request SetCrossMode: req=[\"%s\", \"%s\"]\n",
+//     //                 EntityName, direction1Color, direction2Color);
 
-        if (nk_strcmp(trafficMode.mode, "manual") == 0) {
-            nk_uint32_t direction1 = GetColorMode(trafficMode.color1);
-            nk_uint32_t direction2 = GetColorMode(trafficMode.color2);
-            CrossModeProxy_SetCrossMode(&crossModeProxy, (direction1 << 8) | direction2);
-        }
+//     //nk_char_t result[ILightsMode_MaxLength];
 
-        KosThreadSleep(1000);
-    } while (true);
+//     // Forward request to CrossChecker
+//     // if (req->data.state == 0) {
+//         // LogEvent(&impl->logProxy, 2, EntityName, "System Health: OK!");
+//     // }
 
-    return EXIT_SUCCESS;
-}
+//     // char msgBuffer[IEventLog_MaxTextLength];
+//     // snprintf(msgBuffer, IEventLog_MaxTextLength, "{\"mode\": 0x%08x}", impl->mode);
+//     // LogEvent(&impl->logProxy, 2, EntityName, msgBuffer);
 
-int TrafficModeProxy_Init(TrafficModeProxy *client, const char *channelName, const char *interfaceName) {
-    /**
-     * Get the IPC handle of the connection named
-     * "lights_gpio_connection".
-     */
-    client->channel = ServiceLocatorConnect(channelName);
-    assert(client->channel != INVALID_HANDLE);
+//     // Set result
+//     // res->result = impl->mode;
 
-    /* Initialize IPC transport for interaction with the entities. */
-    NkKosTransport_Init(&client->transport, client->channel, NK_NULL, 0);
+//     return NK_EOK;
+// }
 
-    /**
-     * Get Runtime Interface ID (RIID) for interface traffic_light.Mode.mode.
-     * Here mode is the name of the traffic_light.Mode component instance,
-     * traffic_light.Mode.mode is the name of the Mode interface implementation.
-     */
-    nk_iid_t riid = ServiceLocatorGetRiid(client->channel, interfaceName);
-    assert(riid != INVALID_RIID);
+// // ISysHealth object constructor
+// static struct ISysHealth *CreateISysHealthImpl()
+// {
+//     // Table of implementations of ISysHealth interface methods
+//     static const struct ISysHealth_ops ops = {
+//         .GetHealth = GetHealth_impl
+//     };
 
-    /**
-     * Initialize proxy object by specifying transport (&transport)
-     * and lights gpio interface identifier (riid). Each method of the
-     * proxy object will be implemented by sending a request to the lights gpio.
-     */
-    ITrafficMode_proxy_init(&client->proxy, &client->transport.base, riid);
+//     // Interface implementing object
+//     static struct ISysHealthImpl impl = {
+//         .base = {&ops}
+//     };
 
-    return 0;
-}
+//     CrossModeProxy_Init(&impl.crossCheckerProxy, "crossmode_channel", "crossChecker.crossMode");
 
-nk_err_t TrafficModeProxy_GetTrafficMode(TrafficModeProxy *client, TrafficModeData *trafficMode) {
-    // Request's transport structures
-    ITrafficMode_GetTrafficMode_req req;
-    char reqBuffer[ITrafficMode_req_arena_size];
-    nk_arena reqArena = NK_ARENA_INITIALIZER(reqBuffer, reqBuffer + ITrafficMode_req_arena_size);
+//     EventLogProxy_Init(&impl.logProxy);
+//     LogEvent(&impl.logProxy, 0, EntityName, "\"Hello I'm ControlSystem!\"");
 
-    // Response's transport structures
-    ITrafficMode_GetTrafficMode_res res;
-    char resBuffer[ITrafficMode_res_arena_size];
-    nk_arena resArena = NK_ARENA_INITIALIZER(resBuffer, resBuffer + ITrafficMode_res_arena_size);
+//     // const char *gpio1Color = GetColorName(impl.mode & 0xFF);
+//     // const char *gpio2Color = GetColorName((impl.mode >> 8) & 0xFF);
+//     // fprintf(stderr, "%-13s [DEBUG] Entity initialized: state={\"mode\": 0x%08x, \"lights\": [\"%s\", \"%s\"]}\n",
+//     //                 EntityName, impl.mode, gpio1Color, gpio2Color);
 
+//     return &impl.base;
+// }
 
-    nk_err_t rcResult = ITrafficMode_GetTrafficMode(&client->proxy.base, &req, &reqArena, &res, &resArena);
-
-    if (NK_EOK != rcResult) {
-        return rcResult;
-    }
-
-    nk_size_t size = 0;
-    const nk_char_t *value = nk_arena_get(nk_char_t, &resArena, &res.mode.mode, &size);
-    nk_assert(size > 0);
-
-    const nk_char_t *color1 = nk_arena_get(nk_char_t, &resArena, &res.mode.color1, &size);
-    nk_assert(size > 0);
-
-    const nk_char_t *color2 = nk_arena_get(nk_char_t, &resArena, &res.mode.color2, &size);
-    nk_assert(size > 0);
-
-    nk_strncpy(trafficMode->mode, value, ITrafficMode_MaxModeLength);
-    trafficMode->duration1 = res.mode.duration1;
-    nk_strncpy(trafficMode->color1, color1, ITrafficMode_MaxColorLength);
-    trafficMode->duration2 = res.mode.duration2;
-    nk_strncpy(trafficMode->color2, color2, ITrafficMode_MaxColorLength);
-
-    return NK_EOK;
-}
 
 #define MODES_NUM 27
 
@@ -278,3 +209,72 @@ int main_test(int argc, const char *argv[])
     return EXIT_SUCCESS;
 }
 
+// ControlSystem entity entry point
+int main_ipc(int argc, const char *argv[])
+{
+    // ISysHealth* impl = CreateISysHealthImpl();
+
+    // // Request transport structures
+    // ControlSystem_entity_req req;
+    // char reqBuffer[ControlSystem_entity_req_arena_size];
+    // struct nk_arena reqArena = NK_ARENA_INITIALIZER(reqBuffer, reqBuffer + ControlSystem_entity_req_arena_size);
+
+    // // Response transport structures
+    // ControlSystem_entity_res res;
+    // char resBuffer[ControlSystem_entity_res_arena_size];
+    // struct nk_arena resArena = NK_ARENA_INITIALIZER(resBuffer, resBuffer + ControlSystem_entity_res_arena_size);
+
+    // // Component dispatcher
+    // ControlSystem_component component;
+    // ControlSystem_component_init(&component, impl);
+
+    // // Entity dispatcher
+    // ControlSystem_entity entity;
+    // ControlSystem_entity_init(&entity, &component);
+
+    // // Get IPC service handle
+    // ServiceId iid;
+    // Handle handle = ServiceLocatorRegister(SYSHEALTH_CHANNEL, NULL, 0, &iid);
+    // assert(handle != INVALID_HANDLE);
+
+    // // Initialize transport
+    // NkKosTransport transport;
+    // NkKosTransport_Init(&transport, handle, NK_NULL, 0);
+
+    // // Dispatch loop
+    // do {
+    //     // Flush request/response buffers
+    //     nk_req_reset(&req);
+    //     nk_arena_reset(&reqArena);
+    //     nk_arena_reset(&resArena);
+
+    //     nk_err_t err = NK_EOK;
+
+    //     // Wait for request
+    //     err = nk_transport_recv(&transport.base, &req.base_, &reqArena);
+    //     if (NK_EOK != err) {
+    //         fprintf(stderr, "%-13s [ERROR] nk_transport_recv: err=%d\n", EntityName, err);
+    //     }
+
+    //     // Dispatch request
+    //     err = ControlSystem_entity_dispatch(&entity, &req.base_, &reqArena, &res.base_, &resArena);
+    //     if (NK_EOK != err) {
+    //         fprintf(stderr, "%-13s [ERROR] ControlSystem_entity_dispatch: err=%d\n", EntityName, err);
+    //         //continue;
+    //     }
+
+    //     // Send response
+    //     err = nk_transport_reply(&transport.base, &res.base_, &resArena);
+    //     if (NK_EOK != err) {
+    //         fprintf(stderr, "%-13s [ERROR] nk_transport_reply: err=%d\n", EntityName, err);
+    //         //continue;
+    //     }
+    // } while (true);
+
+    return EXIT_SUCCESS;
+}
+
+int main(int argc, char** argv) {
+    // main_ipc(argc, argv);
+    main_test(argc, argv);
+}

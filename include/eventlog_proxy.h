@@ -34,7 +34,7 @@ inline static const char* GetErrMessage(nk_err_t err) {
 
 
 #define EVENTLOG_CHANNEL "diagnostics_channel"
-#define EVENTLOG_ENDPOINT "diagnostics.eventLog"
+#define EVENTLOG_ENDPOINT "eventLog.eventLog"
 
 typedef struct EventLogProxy {
     // TODO: Exclude if proxy releases all resources
@@ -90,14 +90,14 @@ void LogEvent(EventLogProxy *client, unsigned int code, const char *source, cons
     nk_err_t err = NK_EOK;
 
     // Set event code
-    req.code = code;
+    req.event.code = code;
 
     // Set event source
-    err = NkKosCopyStringToArena(&reqArena, &req.source, source);
+    err = NkKosCopyStringToArena(&reqArena, &req.event.source, source);
     nk_assert(err == NK_EOK);
 
     // Set event text
-    err = NkKosCopyStringToArena(&reqArena, &req.text, text);
+    err = NkKosCopyStringToArena(&reqArena, &req.event.text, text);
     nk_assert(err == NK_EOK);
 
     // Send request to Diagnostics

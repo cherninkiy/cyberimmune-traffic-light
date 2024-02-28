@@ -23,4 +23,22 @@ inline static const char* GetColorName(unsigned int mode) {
     }
 }
 
+inline unsigned int GetColorMode(const char* color) {
+    if (strcmp(color, "red") == 0)
+        return 0x01;
+    if (strcmp(color, "yellow") == 0)
+        return 0x02;
+    if (strcmp(color, "green") == 0)
+        return 0x04;
+    if (strcmp(color, "blink") == 0)
+        return 0x08;
+    if (strcmp(color, "red-yellow") == 0)
+        return 0x03;
+    if (strcmp(color, "blink-yellow") == 0)
+        return 0x0A;
+    if (strcmp(color, "blink-green") == 0)
+        return 0x0C;
+    return 0x00;
+}
+
 #endif // __COLOR_DEFS_H__

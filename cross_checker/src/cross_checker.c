@@ -21,7 +21,7 @@
 #include "color_defs.h"
 
 static const char EntityName[] = "CrossChecker";
-static const char ChannelName[] = "crossControl_channel";
+static const char ChannelName[] = "crossmode_channel";
 
 #define DEFAILT_CROSS_MODE 0x00000A0A
 
