@@ -53,24 +53,5 @@
 
         ```docker rmi kos:1.1.1.40u20.04```
 
-## Домашнее задание: День 2
+## Домашнее задание: День 3
 
-1. ✅ В примере «светофор» реализовать сущность diagnostics по аналогии с echo2c.
-Ожидаемый результат: после запуска системы появляется сообщение от новой
-сущности.
-
-Добавлена новая сущность diagnostics.
-
-![Diagnostics Entity](docs/day2-hw/added_diagnostics_entity.png)
-
-2. ✅ Необязательное задание1 повышенной сложности:
-реализовать IPC взаимодействие между LightsGPIO и Diagnostics. Ожидаемый
-результат: тестовое сообщение от LightsGPIO получено в Diagnostics
-Примечание: для этого задания может быть полезным посмотреть код примера из
-SDK secure_logger
-
-Реализовано взаимодействие сущностей lights_gpio и diagnostics.
-
-![Diagnostics Entity](docs/day2-hw/added_lights_to_diagnostics_connection.png)
-
-3. ✅ Отправить все свои изменения в свой репозиторий на github в ветку [day2-homework-diagnostics-dummy](https://github.com/cherninkiy/cyberimmune-traffic-light/tree/day2-homework-diagnostics-dummy) для задания 1, если сделано и задание 2, то в ветку [day2-homework-diagnostics-functional](https://github.com/cherninkiy/cyberimmune-traffic-light/tree/day2-homework-diagnostics-functional)
