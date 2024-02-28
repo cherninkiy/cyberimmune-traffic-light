@@ -1,134 +1,135 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-
-/* Files required for transport initialization. */
-#include <coresrv/nk/transport-kos.h>
-#include <coresrv/sl/sl_api.h>
-
-/* EDL description of the Diagnostics entity. */
-#include <traffic_light/Diagnostics.edl.h>
-
 #include <assert.h>
 
-/* Type of interface implementing object. */
-typedef struct IStateImpl {
-    struct traffic_light_IState base;     /* Base interface of object */
-    rtl_uint32_t state;                   /* Extra parameters */
-} IStateImpl;
+// Files required for transport initialization
+#include <coresrv/nk/transport-kos.h>
+#include <coresrv/sl/sl_api.h>
+#include <nk/arena.h>
 
-/* State method implementation. */
-static nk_err_t FState_impl(struct traffic_light_IState *self,
-                          const struct traffic_light_IState_FState_req *req,
+#define NK_USE_UNQUALIFIED_NAMES
+
+// EDL description of the Diagnostics entity
+#include <traffic_light/Diagnostics.edl.h>
+#include "eventlog_proxy.h"
+
+static const char EntityName[] = "Diagnostics";
+
+// Type of interface implementing object
+typedef struct IEventLogImpl {
+    struct IEventLog base;     /* Base interface of object */
+    rtl_uint32_t state;        /* Extra parameters */
+} IEventLogImpl;
+
+// State method implementation
+static nk_err_t Collect_impl(struct IEventLog *self,
+                          const struct IEventLog_Collect_req *req,
                           const struct nk_arena *req_arena,
-                          traffic_light_IState_FState_res *res,
+                          struct IEventLog_Collect_res *res,
                           struct nk_arena *res_arena)
 {
-    IStateImpl *impl = (IStateImpl *)self;
-    /**
-     * Increment value in control system request by
-     * one step and include into result argument that will be
-     * sent to the control system in the lights gpio response.
-     */
-    res->result = req->value + impl->state;
+    IEventLogImpl *impl = (IEventLogImpl *)self;
+
+    impl->state = req->code;
+
+    nk_size_t size = 0;
+
+    // Get event source
+    const nk_char_t *source = nk_arena_get(nk_char_t, req_arena, &req->source, &size);
+    nk_assert(size > 0);
+
+    // Get event text
+    const nk_char_t *text = nk_arena_get(nk_char_t, req_arena, &req->text, &size);
+    nk_assert(size > 0);
+
+    // Print event
+    fprintf(stderr, "\x1B[32m%-13s [INFO ] Diagnostic event: req={\"code\": %d, \"source\": \"%s\", \"state\": %s}\x1B[0m\n",
+                    EntityName, req->code, source, text);
+
     return NK_EOK;
 }
 
-/**
- * IState object constructor.
- * state is the number by which the input value is increased.
- */
-static struct traffic_light_IState *CreateIStateImpl(rtl_uint32_t state)
+// IEventLog object constructor
+static struct IEventLog* CreateIEventLogImpl()
 {
-    /* Table of implementations of IState interface methods. */
-    static const struct traffic_light_IState_ops ops = {
-        .FState = FState_impl
+    // Table of implementations of IEventLog interface methods
+    static const struct IEventLog_ops ops = {
+        .Collect = Collect_impl
     };
 
-    /* Interface implementing object. */
-    static struct IStateImpl impl = {
-        .base = {&ops}
+    // Interface implementing object
+    static struct IEventLogImpl impl = {
+        .base = {&ops},
+        .state = 0
     };
-
-    impl.state = state;
 
     return &impl.base;
 }
 
-/* Diagnostics entry point. */
+// Diagnostics entry point
 int main(void)
 {
-    NkKosTransport transport;
-    ServiceId iid;
+    // IEventLog implementation instance;
+    IEventLog* impl = CreateIEventLogImpl();
 
-    /* Get lights gpio IPC handle of "diagnostics_connection". */
-    Handle handle = ServiceLocatorRegister("diagnostics_connection", NULL, 0, &iid);
+    // Request transport structures
+    Diagnostics_entity_req req;
+    char reqBuffer[Diagnostics_entity_req_arena_size];
+    struct nk_arena reqArena = NK_ARENA_INITIALIZER(reqBuffer, reqBuffer + Diagnostics_entity_req_arena_size);
+
+    // Response transport structures
+    Diagnostics_entity_res res;
+    char resBuffer[Diagnostics_entity_res_arena_size];
+    struct nk_arena resArena = NK_ARENA_INITIALIZER(resBuffer, resBuffer + Diagnostics_entity_res_arena_size);
+
+    // Component dispatcher
+    EventLog_component component;
+    EventLog_component_init(&component, impl);
+
+    // Entity dispatcher
+    Diagnostics_entity entity;
+    Diagnostics_entity_init(&entity, &component);
+
+    // Get IPC service handle
+    ServiceId iid;
+    Handle handle = ServiceLocatorRegister(EVENTLOG_CHANNEL, NULL, 0, &iid);
     assert(handle != INVALID_HANDLE);
 
-    /* Initialize transport to lights_gpio. */
+    // Initialize transport
+    NkKosTransport transport;
     NkKosTransport_Init(&transport, handle, NK_NULL, 0);
 
-    /**
-     * Prepare the structures of the request to the lights gpio entity: constant
-     * part and arena. Because none of the methods of the lights gpio entity has
-     * sequence type arguments, only constant parts of the
-     * request and response are used. Arenas are effectively unused. However,
-     * valid arenas of the request and response must be passed to
-     * lights gpio transport methods (nk_transport_recv, nk_transport_reply) and
-     * to the lights gpio method.
-     */
-    traffic_light_Diagnostics_entity_req req;
-    char req_buffer[traffic_light_Diagnostics_entity_req_arena_size];
-    struct nk_arena req_arena = NK_ARENA_INITIALIZER(req_buffer,
-                                        req_buffer + sizeof(req_buffer));
+    // fprintf(stderr, "%-13s [DEBUG] Hello I'm Diagnostics!\n", EntityName);
 
-    /* Prepare response structures: constant part and arena. */
-    traffic_light_Diagnostics_entity_res res;
-    char res_buffer[traffic_light_Diagnostics_entity_res_arena_size];
-    struct nk_arena res_arena = NK_ARENA_INITIALIZER(res_buffer,
-                                        res_buffer + sizeof(res_buffer));
-
-    /**
-     * Initialize mode component dispatcher. 3 is the value of the step,
-     * which is the number by which the input value is increased.
-     */
-    traffic_light_CState_component component;
-    traffic_light_CState_component_init(&component, CreateIStateImpl(0x4200000));
-
-    /* Initialize lights gpio entity dispatcher. */
-    traffic_light_Diagnostics_entity entity;
-    traffic_light_Diagnostics_entity_init(&entity, &component);
-
-    fprintf(stderr, "Hello I'm Diagnostics\n");
-
-    /* Dispatch loop implementation. */
-    do
-    {
-        /* Flush request/response buffers. */
+    // Dispatch loop
+    do {
+        // Flush request/response buffers
         nk_req_reset(&req);
-        nk_arena_reset(&req_arena);
-        nk_arena_reset(&res_arena);
+        nk_arena_reset(&reqArena);
+        nk_arena_reset(&resArena);
 
-        /* Wait for request to lights gpio entity. */
-        if (nk_transport_recv(&transport.base,
-                              &req.base_,
-                              &req_arena) != NK_EOK) {
-            fprintf(stderr, "nk_transport_recv error\n");
-        } else {
-            /**
-             * Handle received request by calling implementation Mode_impl
-             * of the requested Mode interface method.
-             */
-            traffic_light_Diagnostics_entity_dispatch(&entity, &req.base_, &req_arena,
-                                        &res.base_, &res_arena);
+        nk_err_t err = NK_EOK;
+
+        // Wait for request
+        err = nk_transport_recv(&transport.base, &req.base_, &reqArena);
+        if (NK_EOK != err) {
+            fprintf(stderr, "%-13s [ERROR] nk_transport_recv: err=%d\n", EntityName, err);
+            continue;
         }
 
-        /* Send response. */
-        if (nk_transport_reply(&transport.base,
-                               &res.base_,
-                               &res_arena) != NK_EOK) {
-            fprintf(stderr, "nk_transport_reply error\n");
+        // Dispatch request
+        err = Diagnostics_entity_dispatch(&entity, &req.base_, &reqArena, &res.base_, &resArena);
+        if (NK_EOK != err) {
+            fprintf(stderr, "%-13s [ERROR] Diagnostics_entity_dispatch: err=%d\n", EntityName, err);
+            continue;
+        }
+
+        // Send response
+        err = nk_transport_reply(&transport.base, &res.base_, &resArena);
+        if (NK_EOK != err) {
+            fprintf(stderr, "%-13s [ERROR] nk_transport_reply: err=%d\n", EntityName, err);
+            continue;
         }
     }
     while (true);

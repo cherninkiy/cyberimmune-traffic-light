@@ -1,0 +1,13 @@
+/* Package with an "ILightsMode" interface declaration. */
+
+package traffic_light.ILightsMode
+
+typedef string<1> Direction;
+
+const UInt32 MaxLength = 16;
+typedef string<MaxLength> LightsMode;
+
+interface {
+    /* ILightsMode interface method */
+    SetLightsMode(in Direction direction, in LightsMode value, out LightsMode result);
+}

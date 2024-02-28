@@ -1,0 +1,23 @@
+/* Package with an "IEventLog" interface declaration. */
+
+package traffic_light.IEventLog
+
+typedef UInt32 EventCode;
+
+const UInt32 MaxSourceLength = 16;
+typedef string<MaxSourceLength> EventSource;
+
+const UInt32 MaxTextLength = 60;
+typedef string<MaxTextLength> EventText;
+
+struct EventRecord {
+    EventCode code;
+    EventSource source;
+    EventText text;
+}
+
+interface {
+    /* IEventMsg interface method */
+    // Collect(in EventRecord event);
+    Collect(in EventCode code, in EventSource source, in EventText text);
+}

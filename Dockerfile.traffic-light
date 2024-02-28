@@ -1,0 +1,24 @@
+FROM ubuntu:20.04
+
+ENV DEBIAN_FRONTEND noninteractive
+ENV PATH="${PATH}:/opt/KasperskyOS-Community-Edition-1.1.1.40/toolchain/bin"
+
+ENV KOS_DOWNLOAD_LINK="https://products.s.kaspersky-labs.com/special/KasperskyOSCommunityEdition/1.1.1.40/multilanguage-1.1.1.40/3737323236397c44454c7c31/KasperskyOS-Community-Edition_1.1.1.40_en.deb"
+
+RUN apt-get update \
+    && apt install -y \
+        curl \
+        mc \
+    && rm -rf /var/lib/apt/lists/*
+
+# RUN curl -o /tmp/KasperskyOS-Community-Edition_package.deb ${KOS_DOWNLOAD_LINK} 
+COPY install/KasperskyOS-Community-Edition_1.1.1.40_en.deb /tmp/KasperskyOS-Community-Edition_package.deb
+
+RUN apt-get update && apt install -y --fix-broken \
+        /tmp/KasperskyOS-Community-Edition_package.deb \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -f /tmp/KasperskyOS-Community-Edition_package.deb
+
+RUN adduser --disabled-password --gecos "" user
+
+CMD ["bash"]
