@@ -12,7 +12,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # RUN curl -o /tmp/KasperskyOS-Community-Edition_package.deb ${KOS_DOWNLOAD_LINK} 
-COPY install/KasperskyOS-Community-Edition_1.1.1.40_en.deb /tmp/KasperskyOS-Community-Edition_package.deb
+COPY KasperskyOS-Community-Edition_1.1.1.40_en.deb /tmp/KasperskyOS-Community-Edition_package.deb
 
 RUN apt-get update && apt install -y --fix-broken \
         /tmp/KasperskyOS-Community-Edition_package.deb \
