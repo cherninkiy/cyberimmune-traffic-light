@@ -36,15 +36,15 @@ policy object flow_direction1 : Flow {
         states: ["blink-yellow", "green", "blink-green", "yellow", "red", "red-yellow"],
         initial: "blink-yellow",
         transitions: {
-            //                 LOOP                INTERMEDIATE       
-            "blink-yellow": ["blink-yellow", "yellow", "red-yellow"],
+            //                 LOOP            REGULATED
+            "blink-yellow": ["blink-yellow", "green", "red"],
             
-            //                 LOOP             REGULAR        UNREGULATED      ROLLBACK
-            "green":        ["green",        "blink-green",                   "red-yellow"],
-            "blink-green":  ["blink-green",  "yellow",                        "green"],
-            "yellow":       ["yellow",       "red",          "blink-yellow"],
-            "red":          ["red",          "red-yellow",                    "yellow"],
-            "red-yellow":   ["red-yellow",   "green",        "blink-yellow"],
+            //                 LOOP            REGULATED       UNREGULATED
+            "green":        ["green",        "blink-green",  "blink-yellow"],
+            "blink-green":  ["blink-green",  "yellow"],
+            "yellow":       ["yellow",       "red"],
+            "red":          ["red",          "red-yellow",   "blink-yellow"],
+            "red-yellow":   ["red-yellow",   "green"],
         }
     }
 }
@@ -55,15 +55,15 @@ policy object flow_direction2 : Flow {
         states: ["blink-yellow", "green", "blink-green", "yellow", "red", "red-yellow"],
         initial: "blink-yellow",
         transitions: {
-            //                 LOOP                INTERMEDIATE       
-            "blink-yellow": ["blink-yellow", "yellow", "red-yellow"],
+            //                 LOOP            REGULATED
+            "blink-yellow": ["blink-yellow", "green", "red"],
             
-            //                 LOOP             REGULAR        UNREGULATED      ROLLBACK
-            "green":        ["green",        "blink-green",                   "red-yellow"],
-            "blink-green":  ["blink-green",  "yellow",                        "green"],
-            "yellow":       ["yellow",       "red",          "blink-yellow"],
-            "red":          ["red",          "red-yellow",                    "yellow"],
-            "red-yellow":   ["red-yellow",   "green",        "blink-yellow"],
+            //                 LOOP            REGULATED       UNREGULATED
+            "green":        ["green",        "blink-green",  "blink-yellow"],
+            "blink-green":  ["blink-green",  "yellow"],
+            "yellow":       ["yellow",       "red"],
+            "red":          ["red",          "red-yellow",   "blink-yellow"],
+            "red-yellow":   ["red-yellow",   "green"],
         }
     }
 }
@@ -166,27 +166,21 @@ request src=traffic_light.CrossChecker
         "1": {
                 choice (re.select {text : message.value}) {
                     "blink-yellow": {
-                            flow_direction1.allow {sid : dst_sid, states : ["yellow", "blink-yellow", "red-yellow"]}
                             flow_direction1.enter {sid : dst_sid, state : "blink-yellow"}
                         }
                     "green": {
-                            flow_direction1.allow {sid : dst_sid, states : ["green", "red-yellow"]}
                             flow_direction1.enter {sid : dst_sid, state : "green"}
                         }
                     "blink-green": {
-                            flow_direction1.allow {sid : dst_sid, states : ["blink-green", "green"]}
                             flow_direction1.enter {sid : dst_sid, state : "blink-green"}
                         }
                     "yellow": {
-                            flow_direction1.allow {sid : dst_sid, states : ["yellow", "blink-yellow", "blink-green"]}
                             flow_direction1.enter {sid : dst_sid, state : "yellow"}
                         }
                     "red": {
-                            flow_direction1.allow {sid : dst_sid, states : ["red", "yellow"]}
                             flow_direction1.enter {sid : dst_sid, state : "red"}
                         }
                     "red-yellow": {
-                            flow_direction1.allow {sid : dst_sid, states : ["red-yellow", "red", "blink-yellow"]}
                             flow_direction1.enter {sid : dst_sid, state : "red-yellow"}
                         }
                     _: deny()
@@ -195,27 +189,21 @@ request src=traffic_light.CrossChecker
         "2": {
                 choice (re.select {text : message.value}) {
                     "blink-yellow": {
-                            flow_direction2.allow {sid : dst_sid, states : ["yellow", "blink-yellow", "red-yellow"]}
                             flow_direction2.enter {sid : dst_sid, state : "blink-yellow"}
                         }
                     "green": {
-                            flow_direction2.allow {sid : dst_sid, states : ["green", "red-yellow"]}
                             flow_direction2.enter {sid : dst_sid, state : "green"}
                         }
                     "blink-green": {
-                            flow_direction2.allow {sid : dst_sid, states : ["blink-green", "green"]}
                             flow_direction2.enter {sid : dst_sid, state : "blink-green"}
                         }
                     "yellow": {
-                            flow_direction2.allow {sid : dst_sid, states : ["yellow", "blink-yellow", "blink-green"]}
                             flow_direction2.enter {sid : dst_sid, state : "yellow"}
                         }
                     "red": {
-                            flow_direction2.allow {sid : dst_sid, states : ["red", "yellow"]}
                             flow_direction2.enter {sid : dst_sid, state : "red"}
                         }
                     "red-yellow": {
-                            flow_direction2.allow {sid : dst_sid, states : ["red-yellow", "red", "blink-yellow"]}
                             flow_direction2.enter {sid : dst_sid, state : "red-yellow"}
                         }
                     _: deny()

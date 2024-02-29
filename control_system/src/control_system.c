@@ -22,6 +22,8 @@
 // IEventLog Client
 #include "eventlog_proxy.h"
 
+#include "response-parser.h"
+
 static const char EntityName[] = "ControlSystem";
 
 typedef struct TrafficModeProxy {
@@ -50,6 +52,11 @@ int TrafficModeProxy_Init(TrafficModeProxy *client, const char *channelName, con
 
 nk_err_t TrafficModeProxy_GetTrafficMode(TrafficModeProxy *client, TrafficModeData *trafficMode);
 
+nk_err_t TrafficModeProxy_SendDiagnostics(TrafficModeProxy *client, sys_health_data *sysHealthData);
+
+void SelfDiagnostic(EventLogProxy *client, sys_health_data *sysHealthData);
+
+
 int main(int argc, char** argv) {
     TrafficModeProxy trafficModeProxy;
     TrafficModeProxy_Init(&trafficModeProxy, "trafficmode_channel", "trafficMode.trafficMode");
@@ -62,9 +69,10 @@ int main(int argc, char** argv) {
     LogEvent(&eventLogProxy, 0, EntityName, "\"Hello I'm ControlSystem!\"");
 
     TrafficModeData trafficMode;
+    sys_health_data sysHealthData;
     do {
-        LogEvent(&eventLogProxy, 0, EntityName, "\"Hello I'm ControlSystem!\"");
-
+        SelfDiagnostic(&eventLogProxy, &sysHealthData);
+        fprintf(stderr, "%-13s [DEBUG] Self Diagnostic Data: %d\n", EntityName, sysHealthData.stateControlSystem);
 
         TrafficModeProxy_GetTrafficMode(&trafficModeProxy, &trafficMode);
 
@@ -158,123 +166,38 @@ nk_err_t TrafficModeProxy_GetTrafficMode(TrafficModeProxy *client, TrafficModeDa
     return NK_EOK;
 }
 
-#define MODES_NUM 27
+void SelfDiagnostic(EventLogProxy *client, sys_health_data *sysHealthData) {
+    // Request's transport structures
+    IEventLog_Collect_req req;
+    char reqBuffer[IEventLog_Collect_req_arena_size];
+    nk_arena reqArena = NK_ARENA_INITIALIZER(reqBuffer, reqBuffer + IEventLog_Collect_req_arena_size);
 
-int main_test(int argc, const char *argv[])
-{
-    int i, j;
+    // Request's transport structures
+    IEventLog_Collect_res res;
+    char resBuffer[IEventLog_Collect_res_arena_size];
+    nk_arena resArena = NK_ARENA_INITIALIZER(resBuffer, resBuffer + IEventLog_Collect_res_arena_size);
 
-    // INITIAL ["blink-yellow", "blink-yellow"]
-    static const nk_uint32_t tl_modes[MODES_NUM] = {
+    nk_err_t err = NK_EOK;
 
-        // 1. UNREGULATED ["blink-yellow", "blink-yellow"]
-        ICrossMode_Direction1Blink | ICrossMode_Direction1Yellow | ICrossMode_Direction2Blink | ICrossMode_Direction2Yellow,
+    // Set event code
+    req.event.code = 1;
 
-        // 3. Switch to REGULAR, priotiry to direction 1
-        // ["blink-yellow", "blink-yellow"] -> ["red-yellow", "yellow"] -> ["green", "red"]
-        ICrossMode_Direction1Red | ICrossMode_Direction1Yellow   | ICrossMode_Direction2Yellow,
-        ICrossMode_Direction1Green                               | ICrossMode_Direction2Red,
+    // Set event source
+    err = NkKosCopyStringToArena(&reqArena, &req.event.source, EntityName);
+    nk_assert(err == NK_EOK);
 
-        // 8. Full cycle on direction 1, direction 2 is "red"
-        // "green" -> "blink-green" -> "yellow" -> "red-yellow" -> "green"
-        ICrossMode_Direction1Blink | ICrossMode_Direction1Green  | ICrossMode_Direction2Red,
-        ICrossMode_Direction1Yellow                              | ICrossMode_Direction2Red,
-        ICrossMode_Direction1Red                                 | ICrossMode_Direction2Red,
-        ICrossMode_Direction1Red | ICrossMode_Direction1Yellow   | ICrossMode_Direction2Red,
-        ICrossMode_Direction1Green                               | ICrossMode_Direction2Red,
+    // Set event text
+    err = NkKosCopyStringToArena(&reqArena, &req.event.text, "SelfDiagnostic");
+    nk_assert(err == NK_EOK);
 
-        // 11. Switch to UNREGULATED
-        // ["blink-green", "red"] -> ["yellow", "red-yellow"] -> ["blink-yellow", "blink-yellow"]
-        ICrossMode_Direction1Blink | ICrossMode_Direction1Green  | ICrossMode_Direction2Red,
-        ICrossMode_Direction1Yellow                              | ICrossMode_Direction2Red | ICrossMode_Direction2Yellow,
-        ICrossMode_Direction1Blink | ICrossMode_Direction1Yellow | ICrossMode_Direction2Blink | ICrossMode_Direction2Yellow,
+    // Send request to Diagnostics
+    err = IEventLog_Collect(&client->proxy.base, &req, &reqArena, &res, &resArena);
+    nk_assert(err == NK_EOK);
 
-        // 13. Switch to REGULAR, priotiry to direction 2
-        // ["blink-yellow", "blink-yellow"] -> ["yellow", "red-yellow"] -> ["red", "green"]
-        ICrossMode_Direction2Red | ICrossMode_Direction2Yellow   | ICrossMode_Direction1Yellow,
-        ICrossMode_Direction2Green                               | ICrossMode_Direction1Red,
-
-        // 18. Full cycle on direction 2, direction 1 is "red"
-        // "green" -> "blink-green" -> "yellow" -> "red-yellow" -> "green"
-        ICrossMode_Direction2Blink | ICrossMode_Direction2Green  | ICrossMode_Direction1Red,
-        ICrossMode_Direction2Yellow                              | ICrossMode_Direction1Red,
-        ICrossMode_Direction2Red                                 | ICrossMode_Direction1Red,
-        ICrossMode_Direction2Red | ICrossMode_Direction2Yellow   | ICrossMode_Direction1Red,
-        ICrossMode_Direction2Green                               | ICrossMode_Direction1Red,
-
-        // 21. Switch to UNREGULATED
-        // ["blink-green", "red"] -> ["yellow", "red-yellow"] -> ["blink-yellow", "blink-yellow"]
-        ICrossMode_Direction2Blink | ICrossMode_Direction2Green  | ICrossMode_Direction1Red,
-        ICrossMode_Direction2Yellow                              | ICrossMode_Direction1Red | ICrossMode_Direction1Yellow,
-        ICrossMode_Direction2Blink | ICrossMode_Direction2Yellow | ICrossMode_Direction1Blink | ICrossMode_Direction1Yellow,
-
-        // 27... Other
-        ICrossMode_Direction1Red | ICrossMode_Direction2Red,
-        ICrossMode_Direction1Red | ICrossMode_Direction2Red | ICrossMode_Direction2Yellow,
-        ICrossMode_Direction1Red | ICrossMode_Direction2Green,
-        ICrossMode_Direction1Red | ICrossMode_Direction2Blink | ICrossMode_Direction2Green,
-        ICrossMode_Direction1Red | ICrossMode_Direction2Yellow,
-        ICrossMode_Direction1Red | ICrossMode_Direction2Red,
-
-        // ICrossMode_Direction1Red    + ICrossMode_Direction1Yellow + ICrossMode_Direction2Red,
-        // ICrossMode_Direction1Green  + ICrossMode_Direction2Red,
-        // ICrossMode_Direction1Yellow + ICrossMode_Direction2Red,
-        // ICrossMode_Direction1Red    + ICrossMode_Direction2Yellow + ICrossMode_Direction2Red,
-        // ICrossMode_Direction1Red    + ICrossMode_Direction2Green,
-        // ICrossMode_Direction1Red    + ICrossMode_Direction2Yellow,
-        // ICrossMode_Direction1Yellow + ICrossMode_Direction1Blink  + ICrossMode_Direction2Yellow + ICrossMode_Direction2Blink,
-        // ICrossMode_Direction1Green  + ICrossMode_Direction2Green // <-- try to forbid this via security policies
-    };
-
-    static const nk_uint32_t tl_combinations[10] = {
-    //    r     ry           ryg                rygb
-         0x01, 0x01 | 0x02, 0x01 | 0x02 | 0x04, 0x01 | 0x02 | 0x04 | 0x08,
-    //   y      yg           ygb                 g     gb           b
-         0x02, 0x02 | 0x04, 0x02 | 0x04 | 0x08, 0x04, 0x04 | 0x08, 0x08 };
-
-    CrossModeProxy crossModeProxy;
-    CrossModeProxy_Init(&crossModeProxy, "crossmode_channel", "crossChecker.crossMode");
-
-    KosThreadSleep(1000);
-
-    fprintf(stderr, "%-13s [DEBUG] Normal mode testing!\n", "CrossModeProxy");
-
-    /* Test loop. */
-    for (i = 0; i < MODES_NUM; i++)
-    {
-        fprintf(stderr, "request = 0x%08x\n", tl_modes[i]);
-
-        nk_err_t rcResult = CrossModeProxy_SetCrossMode(&crossModeProxy, tl_modes[i]);
-        if (rcOk == rcResult) {
-            fprintf(stdout, "result = 0x%08x\n", (int)rcResult);
-        } else {
-            fprintf(stderr, "Failed to call traffic_light.Mode.Mode()\n");
-        }
-    }
-
-    // fprintf(stderr, "%-13s [DEBUG] Normal mode testing!\n", "CrossModeProxy");
-
-    // for (i = 0; i < 10; ++i) {
-    //     for (j = 0; j < 10; ++j) {
-    //         unsigned int mode = tl_combinations[i] | (tl_combinations[j] << 8);
-
-    //         switch(mode) {
-    //             case 0x0203: continue; // ["blink-yellow", "blink-yellow"] -> ["red-yellow", "yellow"]
-    //             case 0x0302: continue; // ["blink-yellow", "blink-yellow"] -> ["yellow", "red-yellow"]
-    //             case 0x0A0A: continue; // ["blink-yellow", "blink-yellow"] -> ["blink-yellow", "blink-yellow"]
-    //         }
-
-    //         fprintf(stderr, "request = 0x%08x\n", mode);
-
-    //         nk_err_t rcResult = CrossModeProxy_SetCrossMode(&crossModeProxy, mode);
-    //         if (rcOk == rcResult) {
-    //             fprintf(stdout, "result = 0x%08x\n", rcResult);
-    //         } else {
-    //             fprintf(stderr, "Failed to call traffic_light.Mode.Mode()\n");
-    //         }
-    //     }
-    // }
-
-    return EXIT_SUCCESS;
+    sysHealthData->stateControlSystem = res.state.controlSystem;
+    sysHealthData->stateConnector = res.state.connector;
+    sysHealthData->stateCrossChecker = res.state.crossChecker;
+    sysHealthData->stateLightsGPIO1 = res.state.lightsGpio1;
+    sysHealthData->stateLightsGPIO2 = res.state.lightsGpio2;
+    sysHealthData->stateDiagnostics = err;
 }
-

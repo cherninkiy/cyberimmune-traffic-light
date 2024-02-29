@@ -22,6 +22,16 @@ typedef struct traffic_light_mode {
     char direction_2_color[MAX_COLOR_LEN];
 } traffic_light_mode;
 
+typedef struct sys_health_data {
+    unsigned int stateControlSystem;
+    unsigned int stateConnector;
+    unsigned int stateCrossChecker;
+    unsigned int stateLightsGPIO1;
+    unsigned int stateLightsGPIO2;
+    unsigned int stateDiagnostics;
+} sys_health_data;
+
+
 int parse_response(char *response, traffic_light_mode *mode);
 
 #endif // RESPONSE_PARSER

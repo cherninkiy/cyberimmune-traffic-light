@@ -16,7 +16,16 @@ struct EventRecord {
     EventText text;
 }
 
+struct SysHealth {
+    EventCode controlSystem;
+    EventCode connector;
+    EventCode crossChecker;
+    EventCode lightsGpio1;
+    EventCode lightsGpio2;
+    EventCode diagnostics;
+}
+
 interface {
     /* IEventMsg interface method */
-    Collect(in EventRecord event);
+    Collect(in EventRecord event, out SysHealth state);
 }

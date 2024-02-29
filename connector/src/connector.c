@@ -45,8 +45,7 @@ static const char EntityName[] = "Connector";
 static char ChannelName[] = "trafficmode_channel";
 
 /* get traffic light configuration from the central server */
-int get_traffic_light_configuration(traffic_light_mode *mode)
-{
+int get_traffic_light_configuration(traffic_light_mode *mode) {
     int sockfd, connfd;
     struct sockaddr_in servaddr, cli;
 
@@ -128,6 +127,99 @@ int get_traffic_light_configuration(traffic_light_mode *mode)
     return EXIT_SUCCESS;
 }
 
+int send_self_diagnostics(sys_health_data *diagnostic_data) {
+    int sockfd, connfd;
+    struct sockaddr_in servaddr, cli;
+
+    // socket create and verification
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == -1) {
+        fprintf(stderr, "%-13s [ERROR] Socket creation failed!\n", EntityName);
+        return EXIT_FAILURE;
+    }
+    else {
+        // fprintf(stderr, "%-13s [DEBUG] Socket successfully created\n", EntityName);
+    }
+    bzero(&servaddr, sizeof(servaddr));
+
+    // assign IP, PORT
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = inet_addr(HOST_IP);
+
+    if ( servaddr.sin_addr.s_addr == INADDR_NONE ) {
+        fprintf(stderr, "%-13s [ERROR] Bad network address\n", EntityName);
+    }
+
+    servaddr.sin_port = htons(HOST_PORT);
+
+    int res = -1;
+    for (int i = 0; res == -1 && i < NUM_RETRIES; i++)
+    {
+        sleep(1); // Wait some time for server be ready.
+        res = connect(sockfd, (SA*)&servaddr, sizeof(servaddr));
+    }
+
+    // connect the client socket to server socket
+    if (res != 0) {
+        fprintf(stderr, "%-13s [ERROR] Connection not established: error=%d\n", EntityName, res);
+    }
+    else {
+        // fprintf(stderr, "%-13s [DEBUG] Connection established\n", EntityName);
+
+    }
+
+    // printf("preparing request..\n");
+
+    char request_data[MSG_BUF_SIZE];
+    char response_data[MSG_BUF_SIZE];
+    char response_data_chunk[MSG_BUF_SIZE];
+    int  request_len = 0;    
+    size_t n;
+
+    snprintf(request_data, MSG_CHUNK_BUF_SIZE,
+        "POST /diagnostics HTTP/1.1\r\n"
+        "content-type: application/json\n\n"
+        "{"
+        "    \"ControlSystem\": %d," 
+        "    \"Connector\": %d,"
+        "    \"CrossChecker\": %d,"
+        "    \"LightsGPIO1\": %d,"
+        "    \"LightsGPIO2\": %d,"
+        "    \"LightsDiagnostics\": %d"
+        "}",
+        diagnostic_data->stateControlSystem,
+        diagnostic_data->stateConnector,
+        diagnostic_data->stateCrossChecker,
+        diagnostic_data->stateLightsGPIO1,
+        diagnostic_data->stateLightsGPIO2,
+        diagnostic_data->stateDiagnostics
+    );
+
+    request_len = strlen(request_data);
+    response_data[0] = 0;
+    response_data_chunk[0] = 0;
+    // fprintf(stderr, "%s, sending request: %s\n len: %d\n", EntityName, request_data, request_len);
+
+    /// Write the request
+    if (write(sockfd, request_data, request_len) >= 0)
+    {
+        // fprintf(stderr, "%s request sent, reading response..\n", EntityName);
+        /// Read the response
+        while ((n = read(sockfd, response_data_chunk, MSG_BUF_SIZE)) > 0)
+        {
+            strcat(response_data, response_data_chunk);
+            // fprintf(stderr, "%s response data: \n%s\n", EntityName, response_data);
+        }
+    }
+    // fprintf(stderr, "%s read data: %s..\n", EntityName, response_data);
+    // int rc = parse_response(response_data, mode);
+    // fprintf(stderr, "%s response parsing result: \n%d\n", EntityName, rc);
+
+    // close the socket
+    close(sockfd);
+
+    return EXIT_SUCCESS;
+}
 
 // ITrafficMode implementing type
 typedef struct ITrafficModeImpl {

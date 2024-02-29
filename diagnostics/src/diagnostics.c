@@ -67,13 +67,12 @@ static nk_err_t Collect_impl(struct IEventLog *self,
         impl->stateLightsGPIO2 = req->event.code;
     }
 
-    nk_uint32_t state = impl->stateControlSystem | impl->stateConnector
-        | impl->stateCrossChecker | impl->stateLightsGPIO1 | impl->stateLightsGPIO2;
-
-    if (nk_strcmp(source, "ControlSystem") != 0) {
-        // Send data to ControlSystem
-        // SelfDiagnostic(&impl->sysHealthProxy, state);
-    }
+    res->state.controlSystem = impl->stateControlSystem;
+    res->state.connector = impl->stateConnector;
+    res->state.crossChecker = impl->stateCrossChecker;
+    res->state.lightsGpio1 = impl->stateLightsGPIO1;
+    res->state.lightsGpio2 = impl->stateLightsGPIO2;
+    res->state.diagnostics = 1;
 
     return NK_EOK;
 }
