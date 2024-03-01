@@ -57,13 +57,13 @@ def process_kos():
 
 tl_mode = {
     # 'unregulated' | 'regulated' | 'manual'
-    'mode': 'regulated',
+    'mode': 'unregulated',
     # if mode == 'regulated' then green light duration
     # if mode == 'manual' then color
-    'direction_1': 30,
+    'direction_1': "blink-yellow",
     # if mode == 'regulated' then green light duration
     # if mode == 'manual' then color
-    'direction_2': 30
+    'direction_2': "blink-yellow"
 }
 
 run(host='0.0.0.0', port=8081, debug=True)
