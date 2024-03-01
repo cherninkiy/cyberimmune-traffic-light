@@ -55,10 +55,10 @@ void update_field_values_string(char *value) {
 void update_field_values_int(int value) {
     if (update_modes.is_direction_1) {
         traffic_light_resp.direction_1_duration = value;
-        fprintf(stderr, "updated direction_1_duration: %s\n", traffic_light_resp.direction_1_duration);
+        fprintf(stderr, "updated direction_1_duration: %d\n", traffic_light_resp.direction_1_duration);
     } else if (update_modes.is_direction_2) {
         traffic_light_resp.direction_2_duration = value;
-        fprintf(stderr, "updated direction_2_duration: %s\n", traffic_light_resp.direction_2_duration);
+        fprintf(stderr, "updated direction_2_duration: %d\n", traffic_light_resp.direction_2_duration);
     }
 }
 
