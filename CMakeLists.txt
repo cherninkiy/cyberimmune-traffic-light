@@ -50,6 +50,7 @@ option (DHCPCD_STATIC   "Configuration by /etc/dhcpcd_static.config"  OFF)
 
 # Attach the directory with the generated config header files.
 include_directories (include
+                     json_parser
                      ${CMAKE_CURRENT_BINARY_DIR})
 
 set (RESOURCES ${CMAKE_SOURCE_DIR}/resources)

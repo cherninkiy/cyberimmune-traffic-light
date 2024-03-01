@@ -11,8 +11,8 @@ add_dependencies (Connector traffic_light_idl_files traffic_light_connector_edl_
 
 #set_target_properties (Connector PROPERTIES LINK_FLAGS "-Ttext 0x00800000")
 
-target_include_directories (Connector PRIVATE                            
-                            ${CMAKE_SOURCE_DIR}/json-parser)
+# target_include_directories (Connector PRIVATE                            
+#                             ${CMAKE_SOURCE_DIR}/json_parser)
 
 target_link_libraries (Connector
                        ${${PROJECT_NAME}_LIBS}
