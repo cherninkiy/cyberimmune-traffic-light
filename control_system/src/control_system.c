@@ -76,22 +76,28 @@ int main(int argc, char** argv) {
 
         TrafficModeProxy_GetTrafficMode(&trafficModeProxy, &trafficMode);
 
+        nk_err_t err = NK_EOK;
         if (nk_strcmp(trafficMode.mode, "unregulated") == 0) {
             nk_uint32_t unregulatedMode = ICrossMode_Direction1Yellow 
                                         | ICrossMode_Direction1Blink
                                         | ICrossMode_Direction2Yellow
                                         | ICrossMode_Direction2Blink;
-            CrossModeProxy_SetCrossMode(&crossModeProxy, unregulatedMode);
+            err = CrossModeProxy_SetCrossMode(&crossModeProxy, unregulatedMode);
         }
         
         if (nk_strcmp(trafficMode.mode, "regulated") == 0) {
-            CrossModeProxy_SetCrossMode(&crossModeProxy, 0x0C0C);
+            err = CrossModeProxy_SetCrossMode(&crossModeProxy, 0x0C0C);
         }
 
         if (nk_strcmp(trafficMode.mode, "manual") == 0) {
             nk_uint32_t direction1 = GetColorMode(trafficMode.color1);
             nk_uint32_t direction2 = GetColorMode(trafficMode.color2);
-            CrossModeProxy_SetCrossMode(&crossModeProxy, (direction1 << 8) | direction2);
+            err = CrossModeProxy_SetCrossMode(&crossModeProxy, (direction1 << 8) | direction2);
+        }
+
+        if (err != NK_EOK) {
+            fprintf(stderr, "\x1B[31m%-13s [ERROR] SetCrossMode failed: req={\"mode\": \"%s\", \"color1\": \"%s\", \"color2\"=\"%s\"}, err={code: %d, \"message\": \"%s\"}\x1B[0m\n",
+                            EntityName, trafficMode.mode, trafficMode.color1, trafficMode.color2, err, GetErrMessage(err));
         }
 
         KosThreadSleep(1000);
