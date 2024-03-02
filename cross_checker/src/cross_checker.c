@@ -14,8 +14,8 @@
 #include <traffic_light/ICrossMode.idl.h>
 #include <traffic_light/CrossMode.cdl.h>
 #include <traffic_light/CrossChecker.edl.h>
-// IGpioLights Client
-#include <traffic_light/IGpioLights.idl.h>
+// ILightsGpio Client
+#include <traffic_light/ILightsGpio.idl.h>
 // IEventLog Client
 #include "eventlog_proxy.h"
 
@@ -26,20 +26,20 @@ static const char ChannelName[] = "crossmode_channel";
 
 #define DEFAILT_CROSS_MODE 0x00000A0A
 
-typedef struct GpioLightsProxy {
+typedef struct LightsGpioProxy {
     // TODO: Exclude if proxy releases all resources
     NkKosTransport transport;
     // TODO: Exclude if proxy releases all resources
     Handle channel;
-    // IGpioLights client proxy
-    IGpioLights_proxy proxy;
-} GpioLightsProxy;
+    // ILightsGpio client proxy
+    ILightsGpio_proxy proxy;
+} LightsGpioProxy;
 
-void GpioLightsProxy_Init(GpioLightsProxy *client,
+void LightsGpioProxy_Init(LightsGpioProxy *client,
                           const char *channelName,
                           const char *endpointName);
 
-nk_err_t GpioLightsProxy_SetCrossLights(GpioLightsProxy *client,
+nk_err_t LightsGpioProxy_SetCrossLights(LightsGpioProxy *client,
                                         nk_uint32_t crossMode,
                                         const nk_char_t *wayMode1,
                                         const nk_char_t *wayMode2,
@@ -53,7 +53,7 @@ typedef struct ICrossModeImpl {
     // Current mode
     rtl_uint32_t mode;
     // LightsGPIO
-    GpioLightsProxy gpioProxy;
+    LightsGpioProxy gpioProxy;
     // Diagnostics
     EventLogProxy logProxy;
 } ICrossModeImpl;
@@ -80,7 +80,7 @@ static nk_err_t SetCrossMode_impl(struct ICrossMode *self,
                     EntityName, wayMode1, wayMode2, curMode1, curMode2);
 
     nk_uint32_t result;
-    nk_err_t err = GpioLightsProxy_SetCrossLights(&impl->gpioProxy, crossMode, wayMode1, wayMode2, &result);
+    nk_err_t err = LightsGpioProxy_SetCrossLights(&impl->gpioProxy, crossMode, wayMode1, wayMode2, &result);
     if (NK_EOK != err) {
         fprintf(stderr, "\x1B[31m%-13s [ERROR] SetCrossLights failed: "
                         "req={\"wayMode1\": \"%s\", \"wayMode2\"=\"%s\"}, "
@@ -115,7 +115,7 @@ static struct ICrossMode *CreateICrossModeImpl(rtl_uint32_t mode)
 
     impl.mode = mode;
 
-    GpioLightsProxy_Init(&impl.gpioProxy, "gpiolights_channel", "lightsGpio.gpioLights");
+    LightsGpioProxy_Init(&impl.gpioProxy, "gpiolights_channel", "lightsGpio.lightsGpio");
 
     EventLogProxy_Init(&impl.logProxy);
 
@@ -194,7 +194,7 @@ int main(void)
     return EXIT_SUCCESS;
 }
 
-void GpioLightsProxy_Init(GpioLightsProxy *client,
+void LightsGpioProxy_Init(LightsGpioProxy *client,
                           const char *channelName,
                           const char *endpointName)
 {
@@ -212,24 +212,24 @@ void GpioLightsProxy_Init(GpioLightsProxy *client,
     // Initialize proxy object by specifying transport (&transport)
     // and lights gpio interface identifier (riid). Each method of the
     // proxy object will be implemented by sending a request to the lights gpio.
-    IGpioLights_proxy_init(&client->proxy, &client->transport.base, riid);
+    ILightsGpio_proxy_init(&client->proxy, &client->transport.base, riid);
 }
 
-nk_err_t GpioLightsProxy_SetCrossLights(GpioLightsProxy *client,
+nk_err_t LightsGpioProxy_SetCrossLights(LightsGpioProxy *client,
                                         nk_uint32_t crossMode,
                                         const nk_char_t *wayMode1,
                                         const nk_char_t *wayMode2,
                                         nk_uint32_t *result
                                         ) {
     // Request's transport structures
-    IGpioLights_SetCrossLights_req req;
-    char reqBuffer[IGpioLights_req_arena_size];
-    nk_arena reqArena = NK_ARENA_INITIALIZER(reqBuffer, reqBuffer + IGpioLights_req_arena_size);
+    ILightsGpio_SetCrossLights_req req;
+    char reqBuffer[ILightsGpio_req_arena_size];
+    nk_arena reqArena = NK_ARENA_INITIALIZER(reqBuffer, reqBuffer + ILightsGpio_req_arena_size);
 
     // Response's transport structures
-    IGpioLights_SetCrossLights_res res;
-    char resBuffer[IGpioLights_res_arena_size];
-    nk_arena resArena = NK_ARENA_INITIALIZER(resBuffer, resBuffer + IGpioLights_res_arena_size);
+    ILightsGpio_SetCrossLights_res res;
+    char resBuffer[ILightsGpio_res_arena_size];
+    nk_arena resArena = NK_ARENA_INITIALIZER(resBuffer, resBuffer + ILightsGpio_res_arena_size);
 
     // Set requested mode
     req.lights.crossMode = crossMode;
@@ -237,7 +237,7 @@ nk_err_t GpioLightsProxy_SetCrossLights(GpioLightsProxy *client,
     NkKosCopyStringToArena(&reqArena, &req.lights.wayMode2, wayMode2);
 
     // Send request to LigthsGPIO
-    nk_err_t err = IGpioLights_SetCrossLights(&client->proxy.base, &req, &reqArena, &res, &resArena);
+    nk_err_t err = ILightsGpio_SetCrossLights(&client->proxy.base, &req, &reqArena, &res, &resArena);
     if (NK_EOK != err) {
         // Forward error
         return err;
@@ -252,7 +252,7 @@ nk_err_t GpioLightsProxy_SetCrossLights(GpioLightsProxy *client,
     // nk_assert(nk_strcmp(color, resColor) == 0); // Result value equals requested mode
 
     // // Write result
-    // nk_size_t len = nk_strnlen(resColor, IGpioLights_MaxLength);
+    // nk_size_t len = nk_strnlen(resColor, ILightsGpio_MaxLength);
     // nk_strncpy(result, resColor, len);
 
     return NK_EOK;

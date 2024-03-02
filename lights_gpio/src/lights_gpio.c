@@ -11,9 +11,9 @@
 
 #define NK_USE_UNQUALIFIED_NAMES
 
-// IGpioLights Server
-#include <traffic_light/IGpioLights.idl.h>
-#include <traffic_light/GpioLights.cdl.h>
+// ILightsGpio Server
+#include <traffic_light/ILightsGpio.idl.h>
+#include <traffic_light/LightsGpio.cdl.h>
 #include <traffic_light/LightsGPIO.edl.h>
 
 // IEventLog Client
@@ -23,29 +23,29 @@
 
 static const nk_char_t EntityName[] = "LightsGPIO";
 static const nk_char_t ChannelName[] = "gpiolights_channel";
-static const nk_uint32_t DefaultLightsMode = IGpioLights_Direction1Blink
-                                     | IGpioLights_Direction1Yellow
-                                     | IGpioLights_Direction2Blink
-                                     | IGpioLights_Direction2Yellow;
+static const nk_uint32_t DefaultLightsMode = ILightsGpio_Direction1Blink
+                                     | ILightsGpio_Direction1Yellow
+                                     | ILightsGpio_Direction2Blink
+                                     | ILightsGpio_Direction2Yellow;
 
-// IGpioLights implementing type
-typedef struct IGpioLightsImpl {
+// ILightsGpio implementing type
+typedef struct ILightsGpioImpl {
     // Base interface of object
-    struct IGpioLights base;
+    struct ILightsGpio base;
     // Cross lights binary mode
     nk_uint32_t mode;
     // Diagnostics
     EventLogProxy logProxy;
-} IGpioLightsImpl;
+} ILightsGpioImpl;
 
-// IGpioLights.SetCrossLights method implementation
-static nk_err_t SetCrossLights_impl(struct IGpioLights *self,
-                                    const struct IGpioLights_SetCrossLights_req *req,
+// ILightsGpio.SetCrossLights method implementation
+static nk_err_t SetCrossLights_impl(struct ILightsGpio *self,
+                                    const struct ILightsGpio_SetCrossLights_req *req,
                                     const struct nk_arena *req_arena,
-                                    struct IGpioLights_SetCrossLights_res *res,
+                                    struct ILightsGpio_SetCrossLights_res *res,
                                     struct nk_arena *res_arena) {
 
-    IGpioLightsImpl *impl = (IGpioLightsImpl *)self;
+    ILightsGpioImpl *impl = (ILightsGpioImpl *)self;
 
     // Current mode
     nk_uint32_t curCrossMode = impl->mode;
@@ -75,16 +75,16 @@ static nk_err_t SetCrossLights_impl(struct IGpioLights *self,
     return NK_EOK;
 }
 
-// IGpioLights object constructor
-static struct IGpioLights *CreateIGpioLightsImpl() {
+// ILightsGpio object constructor
+static struct ILightsGpio *CreateILightsGpioImpl() {
 
-    // Table of implementations of IGpioLights interface methods
-    static const struct IGpioLights_ops ops = {
+    // Table of implementations of ILightsGpio interface methods
+    static const struct ILightsGpio_ops ops = {
         .SetCrossLights = SetCrossLights_impl
     };
 
     // Interface implementing object
-    static struct IGpioLightsImpl impl = {
+    static struct ILightsGpioImpl impl = {
         .base = {&ops},
         .mode = DefaultLightsMode
     };
@@ -116,8 +116,8 @@ int main(void) {
     struct nk_arena resArena = NK_ARENA_INITIALIZER(resBuffer, resBuffer + LightsGPIO_entity_res_arena_size);
 
     // Component dispatcher
-    GpioLights_component component;
-    GpioLights_component_init(&component, CreateIGpioLightsImpl());
+    LightsGpio_component component;
+    LightsGpio_component_init(&component, CreateILightsGpioImpl());
 
     // Entity dispatcher
     LightsGPIO_entity entity;

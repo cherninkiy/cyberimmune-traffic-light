@@ -1,8 +1,0 @@
-/* Definition of the `GpioLights` component. */
-
-component traffic_light.GpioLights
-
-endpoints {
-    /* Declaration of a named implementation of the "IGpioLights" interface. */
-    gpioLights : traffic_light.IGpioLights
-}

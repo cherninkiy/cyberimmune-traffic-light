@@ -1,5 +1,5 @@
 entity traffic_light.LightsGPIO
 
 components {
-    lightsGpio : traffic_light.GpioLights
+    lightsGpio : traffic_light.LightsGpio
 }

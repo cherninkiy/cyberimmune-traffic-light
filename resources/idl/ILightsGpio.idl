@@ -1,9 +1,9 @@
-/** Package with an "IGpioLights" interface declaration.
+/** Package with an "ILightsGpio" interface declaration.
  * 
  *  The interface describes the functionality of GPIO controller for lights components.
  */
 
-package traffic_light.IGpioLights
+package traffic_light.ILightsGpio
 
 // Cross mode binary masks
 const UInt32 Direction1Red    = 0x00000001;

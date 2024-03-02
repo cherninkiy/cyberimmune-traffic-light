@@ -137,7 +137,7 @@ request src=traffic_light.ControlSystem
 // Request messages: CrossChecker -> LightsGPIO
 request src=traffic_light.CrossChecker 
         dst=traffic_light.LightsGPIO 
-        endpoint=lightsGpio.gpioLights 
+        endpoint=lightsGpio.lightsGpio 
         method=SetCrossLights {
 
     /** Combinations policy:

@@ -1,0 +1,8 @@
+/* Definition of the `LightsGpio` component. */
+
+component traffic_light.LightsGpio
+
+endpoints {
+    /* Declaration of a named implementation of the "ILightsGpio" interface. */
+    lightsGpio : traffic_light.ILightsGpio
+}
