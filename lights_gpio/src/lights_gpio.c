@@ -56,20 +56,20 @@ static nk_err_t SetLightsMode_impl(struct ILightsMode *self,
     nk_assert(size > 0);
     nk_assert(nk_strcmp(direction, impl->direction) == 0);
 
-    // Get requested value
-    const nk_char_t *value = nk_arena_get(nk_char_t, req_arena, &req->value, &size);
+    // Get requested color
+    const nk_char_t *color = nk_arena_get(nk_char_t, req_arena, &req->color, &size);
 
-    // Check value
+    // Check color
     nk_assert(size > 0);
 
     // Turn On/Off GPIO
-    fprintf(stderr, "%-13s [DEBUG] Request SetLightsMode: req={\"direction\": %s, \"value\"=\"%s\"} state={\"direction\": %s, \"value\"=\"%s\"}\n",
-                    EntityName, direction, value, impl->direction, impl->mode);
+    fprintf(stderr, "%-13s [DEBUG] Request SetLightsMode: req={\"direction\": %s, \"color\"=\"%s\"} state={\"direction\": %s, \"value\"=\"%s\"}\n",
+                    EntityName, direction, color, impl->direction, impl->mode);
 
     // Update current mode
     nk_memset(impl->mode, 0, ILightsMode_MaxLength);
-    nk_size_t len = nk_strnlen(value, ILightsMode_MaxLength);
-    nk_strncpy(impl->mode, value, len);
+    nk_size_t len = nk_strnlen(color, ILightsMode_MaxLength);
+    nk_strncpy(impl->mode, color, len);
 
     // Write result
     nk_arena_reset(res_arena);

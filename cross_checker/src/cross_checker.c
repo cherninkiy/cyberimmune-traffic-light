@@ -248,7 +248,7 @@ void GpioLightsProxy_Init(GpioLightsProxy *client,
 
 nk_err_t GpioLightsProxy_SetLightsMode(GpioLightsProxy *client, 
                                        unsigned int direction,
-                                       const char *mode,
+                                       const char *color,
                                        char *result)
 {
     // Request's transport structures
@@ -268,7 +268,7 @@ nk_err_t GpioLightsProxy_SetLightsMode(GpioLightsProxy *client,
         default: NkKosCopyStringToArena(&reqArena, &req.direction, "0"); break;
     }
     // Set requested mode
-    NkKosCopyStringToArena(&reqArena, &req.value, mode);
+    NkKosCopyStringToArena(&reqArena, &req.color, color);
 
     // Send request to LigthsGPIO
     nk_err_t err = ILightsMode_SetLightsMode(&client->proxy.base, &req, &reqArena, &res, &resArena);
@@ -279,15 +279,15 @@ nk_err_t GpioLightsProxy_SetLightsMode(GpioLightsProxy *client,
 
     // Translate response
     nk_size_t size = 0;
-    const nk_char_t *value = nk_arena_get(nk_char_t, &resArena, &res.result, &size);
+    const nk_char_t *resColor = nk_arena_get(nk_char_t, &resArena, &res.result, &size);
 
     // Validate response
     nk_assert(size > 0);                    // Result value is not empty
-    nk_assert(nk_strcmp(mode, value) == 0); // Result value equals requested mode
+    nk_assert(nk_strcmp(color, resColor) == 0); // Result value equals requested mode
 
     // Write result
-    nk_size_t len = nk_strnlen(value, ILightsMode_MaxLength);
-    nk_strncpy(result, value, len);
+    nk_size_t len = nk_strnlen(resColor, ILightsMode_MaxLength);
+    nk_strncpy(result, resColor, len);
 
     return NK_EOK;
 }

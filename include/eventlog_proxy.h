@@ -41,7 +41,7 @@ typedef struct EventLogProxy {
     NkKosTransport transport;
     // TODO: Exclude if proxy releases all resources
     Handle channel;
-    // ILightsMode client proxy
+    // IEventLog client proxy
     IEventLog_proxy proxy;
 } EventLogProxy;
 

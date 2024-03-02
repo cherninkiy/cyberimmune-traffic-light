@@ -164,7 +164,7 @@ request src=traffic_light.CrossChecker
     // assert(message.value != "green")
     choice (re.select {text : message.direction}) {
         "1": {
-                choice (re.select {text : message.value}) {
+                choice (re.select {text : message.color}) {
                     "blink-yellow": {
                             flow_direction1.enter {sid : dst_sid, state : "blink-yellow"}
                         }
@@ -187,7 +187,7 @@ request src=traffic_light.CrossChecker
                 }
             }
         "2": {
-                choice (re.select {text : message.value}) {
+                choice (re.select {text : message.color}) {
                     "blink-yellow": {
                             flow_direction2.enter {sid : dst_sid, state : "blink-yellow"}
                         }

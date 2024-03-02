@@ -9,5 +9,5 @@ typedef string<MaxLength> LightsMode;
 
 interface {
     /* ILightsMode interface method */
-    SetLightsMode(in Direction direction, in LightsMode value, out LightsMode result);
+    SetLightsMode(in Direction direction, in LightsMode color, out LightsMode result);
 }
