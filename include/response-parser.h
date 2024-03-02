@@ -23,12 +23,11 @@ typedef struct traffic_light_mode {
 } traffic_light_mode;
 
 typedef struct sys_health_data {
-    unsigned int stateControlSystem;
-    unsigned int stateConnector;
-    unsigned int stateCrossChecker;
-    unsigned int stateLightsGPIO1;
-    unsigned int stateLightsGPIO2;
-    unsigned int stateDiagnostics;
+    unsigned int controlSystem;
+    unsigned int connector;
+    unsigned int crossChecker;
+    unsigned int lightsGPIO;
+    unsigned int diagnostics;
 } sys_health_data;
 
 

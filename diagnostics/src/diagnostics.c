@@ -22,8 +22,7 @@ typedef struct IEventLogImpl {
     rtl_uint32_t stateControlSystem;  /* Extra parameters */
     rtl_uint32_t stateConnector;      /* Extra parameters */
     rtl_uint32_t stateCrossChecker;   /* Extra parameters */
-    rtl_uint32_t stateLightsGPIO1;    /* Extra parameters */
-    rtl_uint32_t stateLightsGPIO2;    /* Extra parameters */
+    rtl_uint32_t stateLightsGPIO;     /* Extra parameters */
 
     // ISysHealth_proxy sysHealthProxy;
 } IEventLogImpl;
@@ -60,18 +59,14 @@ static nk_err_t Collect_impl(struct IEventLog *self,
     if (nk_strcmp(source, "CrossChecker") == 0) {
         impl->stateCrossChecker = req->event.code;
     }
-    if (nk_strcmp(source, "LightsGPIO1") == 0) {
-        impl->stateLightsGPIO1 = req->event.code;
-    }
-    if (nk_strcmp(source, "LightsGPIO2") == 0) {
-        impl->stateLightsGPIO2 = req->event.code;
+    if (nk_strcmp(source, "LightsGPIO") == 0) {
+        impl->stateLightsGPIO = req->event.code;
     }
 
     res->state.controlSystem = impl->stateControlSystem;
     res->state.connector = impl->stateConnector;
     res->state.crossChecker = impl->stateCrossChecker;
-    res->state.lightsGpio1 = impl->stateLightsGPIO1;
-    res->state.lightsGpio2 = impl->stateLightsGPIO2;
+    res->state.lightsGpio = impl->stateLightsGPIO;
     res->state.diagnostics = 1;
 
     return NK_EOK;
@@ -91,8 +86,7 @@ static struct IEventLog* CreateIEventLogImpl()
         .stateControlSystem = (rtl_uint32_t)-1,
         .stateConnector     = (rtl_uint32_t)-1,
         .stateCrossChecker  = (rtl_uint32_t)-1,
-        .stateLightsGPIO1   = (rtl_uint32_t)-1,
-        .stateLightsGPIO2   = (rtl_uint32_t)-1
+        .stateLightsGPIO    = (rtl_uint32_t)-1
     };
 
     // SysHealthProxy_Init(&impl.sysHealthProxy);

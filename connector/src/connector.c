@@ -183,16 +183,14 @@ int send_self_diagnostics(sys_health_data *diagnostic_data) {
         "    \"ControlSystem\": %d," 
         "    \"Connector\": %d,"
         "    \"CrossChecker\": %d,"
-        "    \"LightsGPIO1\": %d,"
-        "    \"LightsGPIO2\": %d,"
+        "    \"LightsGPIO\": %d,"
         "    \"LightsDiagnostics\": %d"
         "}",
-        diagnostic_data->stateControlSystem,
-        diagnostic_data->stateConnector,
-        diagnostic_data->stateCrossChecker,
-        diagnostic_data->stateLightsGPIO1,
-        diagnostic_data->stateLightsGPIO2,
-        diagnostic_data->stateDiagnostics
+        diagnostic_data->controlSystem,
+        diagnostic_data->connector,
+        diagnostic_data->crossChecker,
+        diagnostic_data->lightsGPIO,
+        diagnostic_data->diagnostics
     );
 
     request_len = strlen(request_data);

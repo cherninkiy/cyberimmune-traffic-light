@@ -1,4 +1,7 @@
-/* Package with an "IEventLog" interface declaration. */
+/** Package with an "IEventLog" interface declaration.
+ * 
+ * The interface describes logging functionality.
+ */
 
 package traffic_light.IEventLog
 
@@ -10,22 +13,25 @@ typedef string<MaxSourceLength> EventSource;
 const UInt32 MaxTextLength = 60;
 typedef string<MaxTextLength> EventText;
 
+// Request data
 struct EventRecord {
     EventCode code;
     EventSource source;
     EventText text;
 }
 
+// Response data
 struct SysHealth {
     EventCode controlSystem;
     EventCode connector;
     EventCode crossChecker;
-    EventCode lightsGpio1;
-    EventCode lightsGpio2;
+    EventCode lightsGpio;
     EventCode diagnostics;
 }
 
 interface {
-    /* IEventMsg interface method */
+    // The method should implement event processing.
+    // event - Event to process.
+    // state - Self diagnostics state.
     Collect(in EventRecord event, out SysHealth state);
 }

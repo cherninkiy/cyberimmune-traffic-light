@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
     sys_health_data sysHealthData;
     do {
         SelfDiagnostic(&eventLogProxy, &sysHealthData);
-        fprintf(stderr, "%-13s [DEBUG] Self Diagnostic Data: %d\n", EntityName, sysHealthData.stateControlSystem);
+        fprintf(stderr, "%-13s [DEBUG] Self Diagnostic Data: %d\n", EntityName, sysHealthData.controlSystem);
 
         TrafficModeProxy_GetTrafficMode(&trafficModeProxy, &trafficMode);
 
@@ -200,10 +200,9 @@ void SelfDiagnostic(EventLogProxy *client, sys_health_data *sysHealthData) {
     err = IEventLog_Collect(&client->proxy.base, &req, &reqArena, &res, &resArena);
     nk_assert(err == NK_EOK);
 
-    sysHealthData->stateControlSystem = res.state.controlSystem;
-    sysHealthData->stateConnector = res.state.connector;
-    sysHealthData->stateCrossChecker = res.state.crossChecker;
-    sysHealthData->stateLightsGPIO1 = res.state.lightsGpio1;
-    sysHealthData->stateLightsGPIO2 = res.state.lightsGpio2;
-    sysHealthData->stateDiagnostics = err;
+    sysHealthData->controlSystem = res.state.controlSystem;
+    sysHealthData->connector = res.state.connector;
+    sysHealthData->crossChecker = res.state.crossChecker;
+    sysHealthData->lightsGPIO = res.state.lightsGpio;
+    sysHealthData->diagnostics = err;
 }
