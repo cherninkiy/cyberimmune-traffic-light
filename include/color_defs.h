@@ -23,6 +23,33 @@ inline static const char* GetColorName(unsigned int mode) {
     }
 }
 
+// #define KNRM  "\x1B[0m"
+// #define KRED  "\x1B[31m"
+// #define KGRN  "\x1B[32m"
+// #define KYEL  "\x1B[33m"
+
+static const char* ConsoleColors[] = {
+    "\x1B[40munknown\x1B[0m",
+    "\x1B[41mred\x1B[0m",
+    "\x1B[43myellow\x1B[0m",
+    "\x1B[42mgreen\x1B[0m",
+    "\x1B[41mred\x1B[0m-\x1B[43myellow\x1B[0m",
+    "\x1B[40mblink\x1B[0m-\x1B[43myellow\x1B[0m",
+    "\x1B[40mblink\x1B[0m-\x1B[42mgreen\x1B[0m"
+};
+
+inline static const char* GetConsoleColor(unsigned int mode) {
+    switch(mode & 0xFF) {
+        case 0x01: return ConsoleColors[ColorRed];
+        case 0x02: return ConsoleColors[ColorYellow];
+        case 0x04: return ConsoleColors[ColorGreen];
+        case 0x03: return ConsoleColors[ColorRedYellow];
+        case 0x0A: return ConsoleColors[ColorBlinkYellow];
+        case 0x0C: return ConsoleColors[ColorBlinkGreen];
+        default: return ConsoleColors[ColorUnknown];
+    }
+}
+
 inline unsigned int GetColorMode(const char* color) {
     if (strcmp(color, "red") == 0)
         return 0x01;

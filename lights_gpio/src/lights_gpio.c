@@ -7,6 +7,7 @@
 #include <coresrv/nk/transport-kos.h>
 #include <coresrv/sl/sl_api.h>
 #include <nk/arena.h>
+#include <nk/types.h>
 
 #define NK_USE_UNQUALIFIED_NAMES
 
@@ -18,94 +19,83 @@
 // IEventLog Client
 #include "eventlog_proxy.h"
 
-static char EntityName[] = "LightsGPIO*";
-static char ChannelName[] = "lightsGpio*_channel";
-static unsigned int Direction;
+#include "color_defs.h"
 
-#define DEFAULT_LIGHTS_MODE "blink-yellow"
-#define MAX_DIRECTION_LENGTH 12
-#define MAX_COLOR_LENGTH IGpioLights_MaxLength
+static const nk_char_t EntityName[] = "LightsGPIO";
+static const nk_char_t ChannelName[] = "gpiolights_channel";
+static const nk_uint32_t DefaultLightsMode = IGpioLights_Direction1Blink
+                                     | IGpioLights_Direction1Yellow
+                                     | IGpioLights_Direction2Blink
+                                     | IGpioLights_Direction2Yellow;
 
 // IGpioLights implementing type
 typedef struct IGpioLightsImpl {
     // Base interface of object
     struct IGpioLights base;
-    // Direction (i.e. 1, 2) if unspecified then 0
-    char direction[MAX_DIRECTION_LENGTH];
-    // Current GpioLights
-    char mode[MAX_COLOR_LENGTH];
+    // Cross lights binary mode
+    nk_uint32_t mode;
     // Diagnostics
     EventLogProxy logProxy;
 } IGpioLightsImpl;
 
-// IGpioLights.SetLightsMode method implementation
-static nk_err_t SetLightsMode_impl(struct IGpioLights *self,
-                                   const struct IGpioLights_SetLightsMode_req *req,
-                                   const struct nk_arena *req_arena,
-                                   struct IGpioLights_SetLightsMode_res *res,
-                                   struct nk_arena *res_arena) {
+// IGpioLights.SetCrossLights method implementation
+static nk_err_t SetCrossLights_impl(struct IGpioLights *self,
+                                    const struct IGpioLights_SetCrossLights_req *req,
+                                    const struct nk_arena *req_arena,
+                                    struct IGpioLights_SetCrossLights_res *res,
+                                    struct nk_arena *res_arena) {
 
     IGpioLightsImpl *impl = (IGpioLightsImpl *)self;
 
-    // // Initial State
-    // fprintf(stderr, "%-13s [DEBUG] state={direction=%d, mode=\"%s\"}\n",
-    //                 EntityName, impl->direction, impl->mode);
+    // Current mode
+    nk_uint32_t curCrossMode = impl->mode;
+    const nk_char_t *curWayMode1 = GetConsoleColor(curCrossMode & 0xFF);
+    const nk_char_t *curWayMode2 = GetConsoleColor((curCrossMode >> 8) & 0xFF);
 
-    // Check direction
-    nk_size_t size = 0;
-    const nk_char_t *direction = nk_arena_get(nk_char_t, req_arena, &req->direction, &size);
-    nk_assert(size > 0);
-    nk_assert(nk_strcmp(direction, impl->direction) == 0);
+    // Requested mode
+    nk_uint32_t reqCrossMode = req->lights.crossMode;
+    const nk_char_t *reqWayMode1 = GetConsoleColor(reqCrossMode & 0xFF);
+    const nk_char_t *reqWayMode2 = GetConsoleColor((reqCrossMode >> 8) & 0xFF);
 
-    // Get requested mode
-    const nk_char_t *color = nk_arena_get(nk_char_t, req_arena, &req->mode, &size);
+    fprintf(stderr, "%-13s [DEBUG] Request SetCrossLights: \n"
+                    "current={\"mode\": 0x%08x, \"lights\": [\"%s\", \"%s\"]}\n"
+                    "request={\"mode\": 0x%08x, \"lights\": [\"%s\", \"%s\"]}\n",
+                    EntityName, curCrossMode, curWayMode1, curWayMode2,
+                                reqCrossMode, reqWayMode1, reqWayMode2);
 
-    // Check value
-    nk_assert(size > 0);
+    // Some GPIO-related code
+    // ......................
 
-    // Turn On/Off GPIO
-    fprintf(stderr, "%-13s [DEBUG] Request SetGpioLights: req={\"direction\": %s, \"color\"=\"%s\"} state={\"direction\": %s, \"value\"=\"%s\"}\n",
-                    EntityName, direction, color, impl->direction, impl->mode);
+    // Store new mode
+    impl->mode = req->lights.crossMode;
 
-    // Update current mode
-    nk_memset(impl->mode, 0, IGpioLights_MaxLength);
-    nk_size_t len = nk_strnlen(color, IGpioLights_MaxLength);
-    nk_strncpy(impl->mode, color, len);
-
-    // Write result
-    nk_arena_reset(res_arena);
-    nk_err_t err = NkKosCopyStringToArena(res_arena, &res->result, impl->mode);
-    nk_assert(err == NK_EOK);
-
-    char msgBuffer[IEventLog_MaxTextLength];
-    snprintf(msgBuffer, IEventLog_MaxTextLength,
-             "{\"direction\": %s, \"mode\": \"%s\"}", impl->direction, impl->mode);
-    LogEvent(&impl->logProxy, 2, EntityName, msgBuffer);
+    // Set result
+    res->result = impl->mode;
 
     return NK_EOK;
 }
 
 // IGpioLights object constructor
-static struct IGpioLights *CreateIGpioLightsImpl(unsigned int direction)
-{
+static struct IGpioLights *CreateIGpioLightsImpl() {
+
     // Table of implementations of IGpioLights interface methods
     static const struct IGpioLights_ops ops = {
-        .SetLightsMode = SetLightsMode_impl
+        .SetCrossLights = SetCrossLights_impl
     };
 
     // Interface implementing object
     static struct IGpioLightsImpl impl = {
         .base = {&ops},
-        .mode = DEFAULT_LIGHTS_MODE
+        .mode = DefaultLightsMode
     };
-
-    // Object data initialization
-    snprintf(impl.direction, MAX_DIRECTION_LENGTH, "%d", direction);
 
     EventLogProxy_Init(&impl.logProxy);
 
-    fprintf(stderr, "%-13s [DEBUG] Entity initialized: state={\"direction\": %s, \"mode\": \"%s\"}\n",
-                    EntityName, impl.direction, impl.mode);
+    const nk_char_t *wayMode1 = GetConsoleColor(impl.mode & 0xFF);
+    const nk_char_t *wayMode2 = GetConsoleColor((impl.mode >> 8) & 0xFF);
+    fprintf(stderr, "%-13s [DEBUG] Entity initialized: "
+                    "state={\"mode\": 0x%08x, \"lights\": [\"%s\", \"%s\"]}\n",
+                    EntityName, impl.mode, wayMode1, wayMode2);
 
     LogEvent(&impl.logProxy, 0, EntityName, "\"Hello I'm LightsGPIO!\"");
 
@@ -113,22 +103,7 @@ static struct IGpioLights *CreateIGpioLightsImpl(unsigned int direction)
 }
 
 // LightsGPIO entry point
-int main(int argc, char** argv)
-{
-    assert(argc == 1);
-    if (strcmp(argv[0], "LightsGPIO1") == 0) {
-        EntityName[10] = '1';
-        ChannelName[10] = '1';
-        Direction = 1;
-    } else if (strcmp(argv[0], "LightsGPIO2") == 0) {
-        EntityName[10] = '2';
-        ChannelName[10] = '2';
-        Direction = 2;
-    } else {
-        fprintf(stderr, "%-13s [ERROR] Unknown EntityName: %s in %s at %s\n",
-                EntityName, argv[0], __FILE__, __FUNCTION__);
-        return -1;
-    }
+int main(void) {
 
     // Request transport structures
     LightsGPIO_entity_req req;
@@ -142,7 +117,7 @@ int main(int argc, char** argv)
 
     // Component dispatcher
     GpioLights_component component;
-    GpioLights_component_init(&component, CreateIGpioLightsImpl(Direction));
+    GpioLights_component_init(&component, CreateIGpioLightsImpl());
 
     // Entity dispatcher
     LightsGPIO_entity entity;
@@ -158,8 +133,7 @@ int main(int argc, char** argv)
     NkKosTransport_Init(&transport, handle, NK_NULL, 0);
 
     // Dispatch loop
-    do
-    {
+    do {
         // Flush request/response buffers
         nk_req_reset(&req);
         nk_arena_reset(&reqArena);
@@ -187,7 +161,6 @@ int main(int argc, char** argv)
             fprintf(stderr, "%-13s [ERROR] nk_transport_reply: err=%d\n", EntityName, err);
             continue;
         }
-        // fprintf(stderr, "%-13s [ERROR] Response sent: err=%d\n", EntityName, err);
 
     } while (true);
 

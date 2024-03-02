@@ -1,19 +1,38 @@
 /** Package with an "IGpioLights" interface declaration.
  * 
- *  The interface describes the main functionality of GPIO controller for lights components.
+ *  The interface describes the functionality of GPIO controller for lights components.
  */
 
 package traffic_light.IGpioLights
 
-typedef string<1> Direction;
+// Cross mode binary masks
+const UInt32 Direction1Red    = 0x00000001;
+const UInt32 Direction1Yellow = 0x00000002;
+const UInt32 Direction1Green  = 0x00000004;
+const UInt32 Direction1Blink  = 0x00000008;
+
+const UInt32 Direction2Red    = 0x00000100;
+const UInt32 Direction2Yellow = 0x00000200;
+const UInt32 Direction2Green  = 0x00000400;
+const UInt32 Direction2Blink  = 0x00000800;
 
 const UInt32 MaxLength = 16;
+
+// Color name or blinking color or their combination.
 typedef string<MaxLength> LightsMode;
 
+// Ligths modes for crossway.
+struct CrossLights {
+    // Cross mode (binary)
+    UInt32 crossMode;
+    // Way modes (string)
+    LightsMode wayMode1;
+    LightsMode wayMode2;
+}
+
 interface {
-    // IGpioLights interface method.
-    // direction - Current traffic lights direction.
-    // mode      - Traffic lights mode: color or blinking color or their combination.
-    // result    - Result, same as mode if success else actual mode.
-    SetLightsMode(in Direction direction, in LightsMode mode, out LightsMode result);
+    // The method should implement maintenance for GPIO connected lights components.
+    // lights - Cross lights mode to set.
+    // result - Result cross mode (binary).
+    SetCrossLights(in CrossLights lights, out UInt32 result);
 }

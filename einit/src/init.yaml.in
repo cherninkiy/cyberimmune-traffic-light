@@ -21,23 +21,12 @@ entities:
 # The `CrossChecker` entity can call `LightsGPIO's` and `Diagnostics`
 - name: traffic_light.CrossChecker
   connections:
-  - target: traffic_light.LightsGPIO1
-    id: lightsGpio1_channel
-  - target: traffic_light.LightsGPIO2
-    id: lightsGpio2_channel
+  - target: traffic_light.LightsGPIO
+    id: gpiolights_channel
   - target: traffic_light.Diagnostics
     id: diagnostics_channel
-# The `LightsGPIO1` entity can call `Diagnostics`.
-- task: traffic_light.LightsGPIO1
-  name: traffic_light.LightsGPIO
-  path: LightsGPIO1
-  connections:
-  - target: traffic_light.Diagnostics
-    id: diagnostics_channel
-# The `LightsGPIO2` entity can call `Diagnostics`.
-- task: traffic_light.LightsGPIO2
-  name: traffic_light.LightsGPIO
-  path: LightsGPIO2
+# The `LightsGPIO` entity can call `Diagnostics`.
+- name: traffic_light.LightsGPIO
   connections:
   - target: traffic_light.Diagnostics
     id: diagnostics_channel

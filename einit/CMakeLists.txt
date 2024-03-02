@@ -11,8 +11,7 @@ project_header_default ("STANDARD_GNU_11:YES" "STRICT_WARNINGS:NO")
 set (ENTITIES ControlSystem 
             Connector
             CrossChecker
-            LightsGPIO1
-            LightsGPIO2
+            LightsGPIO
             Diagnostics
             ${precompiled_vfsVfsNet}
             ${rump_DHCPCD_ENTITY})

@@ -131,82 +131,82 @@ request src=traffic_light.ControlSystem
         endpoint=crossMode.crossMode 
         method=SetCrossMode {
 
-    // Deny all "green" combintaions except                   {["green", "red"], ["red", "green"]}
-    // Deny all "blink-green" combinations except             {["blink-green", "red"], ["red", "blink-green"]}
-    // Deny all "yellow"|"red-yellow" combinations except     {["yellow", "red-yellow"], ["red-yellow", "yellow"]}
-    //                                                        {["yellow", "red"], ["red", "yellow"]}
-    //                                                        {["red-yellow", "red"], ["red", "red-yellow"]}
-    // Deny all "blink-yellow" combinations except            {["blink-yellow", "blink-yellow"]}
-    // Allow all "red" combinations                           {["red", "red"]}
-
-    assert(bool.any [
-        message.mode == 0x00000A0A, // ["blink-yellow", "blink-yellow"]
-        message.mode == 0x00000203, // ["yellow",       "red-yellow"]
-        message.mode == 0x00000302, // ["red-yellow",   "yellow"]
-        message.mode == 0x0000010C, // ["red",          "blink-green"]
-        message.mode == 0x00000C01, // ["blink-green",  "red"]
-        message.mode == 0x00000104, // ["red",          "green"]
-        message.mode == 0x00000401, // ["green",        "red"]
-        message.mode == 0x00000102, // ["red",          "yellow"]
-        message.mode == 0x00000201, // ["yellow",       "red"]
-        message.mode == 0x00000103, // ["red",          "red-yellow"]
-        message.mode == 0x00000301, // ["red-yellow",   "red"]
-        message.mode == 0x00000101  // ["red",          "red"]
-    ])
+    grant()
 }
 
 // Request messages: CrossChecker -> LightsGPIO
 request src=traffic_light.CrossChecker 
         dst=traffic_light.LightsGPIO 
         endpoint=lightsGpio.gpioLights 
-        method=SetLightsMode {
+        method=SetCrossLights {
 
-    choice (re.select {text : message.direction}) {
-        "1": {
-                choice (re.select {text : message.mode}) {
-                    "blink-yellow": {
-                            flow_direction1.enter {sid : dst_sid, state : "blink-yellow"}
-                        }
-                    "green": {
-                            flow_direction1.enter {sid : dst_sid, state : "green"}
-                        }
-                    "blink-green": {
-                            flow_direction1.enter {sid : dst_sid, state : "blink-green"}
-                        }
-                    "yellow": {
-                            flow_direction1.enter {sid : dst_sid, state : "yellow"}
-                        }
-                    "red": {
-                            flow_direction1.enter {sid : dst_sid, state : "red"}
-                        }
-                    "red-yellow": {
-                            flow_direction1.enter {sid : dst_sid, state : "red-yellow"}
-                        }
-                    _: deny()
-                }
+    /** Combinations policy:
+     *      Deny all "green" combintaions except               {["green", "red"], ["red", "green"]}
+     *      Deny all "blink-green" combinations except         {["blink-green", "red"], ["red", "blink-green"]}
+     *      Deny all "yellow"|"red-yellow" combinations except {["yellow", "red-yellow"], ["red-yellow", "yellow"]}
+     *                                                         {["yellow", "red"], ["red", "yellow"]}
+     *                                                         {["red-yellow", "red"], ["red", "red-yellow"]}
+     *      Deny all "blink-yellow" combinations except        {["blink-yellow", "blink-yellow"]}
+     *      Allow all "red" combinations                       {["red", "red"]}
+     */
+
+    assert(bool.any [
+        message.lights.crossMode == 0x00000A0A, // ["blink-yellow", "blink-yellow"]
+        message.lights.crossMode == 0x00000203, // ["yellow",       "red-yellow"]
+        message.lights.crossMode == 0x00000302, // ["red-yellow",   "yellow"]
+        message.lights.crossMode == 0x0000010C, // ["red",          "blink-green"]
+        message.lights.crossMode == 0x00000C01, // ["blink-green",  "red"]
+        message.lights.crossMode == 0x00000104, // ["red",          "green"]
+        message.lights.crossMode == 0x00000401, // ["green",        "red"]
+        message.lights.crossMode == 0x00000102, // ["red",          "yellow"]
+        message.lights.crossMode == 0x00000201, // ["yellow",       "red"]
+        message.lights.crossMode == 0x00000103, // ["red",          "red-yellow"]
+        message.lights.crossMode == 0x00000301, // ["red-yellow",   "red"]
+        message.lights.crossMode == 0x00000101  // ["red",          "red"]
+    ])
+
+    /** Transitions policy */
+
+    choice (re.select {text : message.lights.wayMode1}) {
+        "blink-yellow": {
+                flow_direction1.enter {sid : dst_sid, state : "blink-yellow"}
             }
-        "2": {
-                choice (re.select {text : message.mode}) {
-                    "blink-yellow": {
-                            flow_direction2.enter {sid : dst_sid, state : "blink-yellow"}
-                        }
-                    "green": {
-                            flow_direction2.enter {sid : dst_sid, state : "green"}
-                        }
-                    "blink-green": {
-                            flow_direction2.enter {sid : dst_sid, state : "blink-green"}
-                        }
-                    "yellow": {
-                            flow_direction2.enter {sid : dst_sid, state : "yellow"}
-                        }
-                    "red": {
-                            flow_direction2.enter {sid : dst_sid, state : "red"}
-                        }
-                    "red-yellow": {
-                            flow_direction2.enter {sid : dst_sid, state : "red-yellow"}
-                        }
-                    _: deny()
-                }
+        "green": {
+                flow_direction1.enter {sid : dst_sid, state : "green"}
+            }
+        "blink-green": {
+                flow_direction1.enter {sid : dst_sid, state : "blink-green"}
+            }
+        "yellow": {
+                flow_direction1.enter {sid : dst_sid, state : "yellow"}
+            }
+        "red": {
+                flow_direction1.enter {sid : dst_sid, state : "red"}
+            }
+        "red-yellow": {
+                flow_direction1.enter {sid : dst_sid, state : "red-yellow"}
+            }
+        _: deny()
+    }
+
+    choice (re.select {text : message.lights.wayMode2}) {
+        "blink-yellow": {
+                flow_direction2.enter {sid : dst_sid, state : "blink-yellow"}
+            }
+        "green": {
+                flow_direction2.enter {sid : dst_sid, state : "green"}
+            }
+        "blink-green": {
+                flow_direction2.enter {sid : dst_sid, state : "blink-green"}
+            }
+        "yellow": {
+                flow_direction2.enter {sid : dst_sid, state : "yellow"}
+            }
+        "red": {
+                flow_direction2.enter {sid : dst_sid, state : "red"}
+            }
+        "red-yellow": {
+                flow_direction2.enter {sid : dst_sid, state : "red-yellow"}
             }
         _: deny()
     }

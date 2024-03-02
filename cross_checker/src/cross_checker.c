@@ -5,8 +5,9 @@
 
 // Files required for transport initialization
 #include <coresrv/nk/transport-kos.h>
-#include <nk/arena.h>
 #include <coresrv/sl/sl_api.h>
+#include <nk/arena.h>
+#include <nk/types.h>
 
 #define NK_USE_UNQUALIFIED_NAMES
 // ICrossMode Server
@@ -38,10 +39,12 @@ void GpioLightsProxy_Init(GpioLightsProxy *client,
                           const char *channelName,
                           const char *endpointName);
 
-nk_err_t GpioLightsProxy_SetLightsMode(GpioLightsProxy *client,
-                                       unsigned int direction,
-                                       const char *mode,
-                                       char* result);
+nk_err_t GpioLightsProxy_SetCrossLights(GpioLightsProxy *client,
+                                        nk_uint32_t crossMode,
+                                        const nk_char_t *wayMode1,
+                                        const nk_char_t *wayMode2,
+                                        nk_uint32_t *result
+                                        );
 
 // ICrossMode implementing type
 typedef struct ICrossModeImpl {
@@ -49,10 +52,8 @@ typedef struct ICrossModeImpl {
     struct ICrossMode base;
     // Current mode
     rtl_uint32_t mode;
-    // LightsGPIO1
-    GpioLightsProxy gpioClient1;
-    // LightsGPIO2
-    GpioLightsProxy gpioClient2;
+    // LightsGPIO
+    GpioLightsProxy gpioProxy;
     // Diagnostics
     EventLogProxy logProxy;
 } ICrossModeImpl;
@@ -62,69 +63,39 @@ static nk_err_t SetCrossMode_impl(struct ICrossMode *self,
                                   const struct ICrossMode_SetCrossMode_req *req,
                                   const struct nk_arena *req_arena,
                                   struct ICrossMode_SetCrossMode_res *res,
-                                  struct nk_arena *res_arena)
-{
+                                  struct nk_arena *res_arena) {
+
     ICrossModeImpl *impl = (ICrossModeImpl *)self;
 
-    const char *impl1Color = GetColorName(impl->mode & 0xFF);
-    const char *impl2Color = GetColorName((impl->mode >> 8) & 0xFF);
+    const char *curMode1 = GetColorName(impl->mode & 0xFF);
+    const char *curMode2 = GetColorName((impl->mode >> 8) & 0xFF);
 
-    const char *gpio1Color = GetColorName(req->mode & 0xFF);
-    const char *gpio2Color = GetColorName((req->mode >> 8) & 0xFF);
+    nk_uint32_t crossMode = req->mode;
+    const char *wayMode1 = GetColorName(crossMode & 0xFF);
+    const char *wayMode2 = GetColorName((crossMode >> 8) & 0xFF);
     // fprintf(stderr, "%-13s [DEBUG] Request SetCrossMode: req={\"mode\": 0x%08x, \"lights\": [\"%s\", \"%s\"]} state={\"mode\": 0x%08x, \"lights\": [\"%s\", \"%s\"]}\n",
-    //                 EntityName, req->mode, gpio1Color, gpio2Color, impl->mode, impl1Color, impl2Color);
-    fprintf(stderr, "%-13s [DEBUG] Request SetCrossMode: req=[\"%s\", \"%s\"] state=[\"%s\", \"%s\"]\n",
-                    EntityName, gpio1Color, gpio2Color, impl1Color, impl2Color);
+    //                 EntityName, crossMode, wayMode1, wayMode2, impl->mode, curMode1, curMode2);
+    fprintf(stderr, "%-13s [DEBUG] Request SetCrossMode: "
+                    "req=[\"%s\", \"%s\"] state=[\"%s\", \"%s\"]\n",
+                    EntityName, wayMode1, wayMode2, curMode1, curMode2);
 
-    nk_char_t result[IGpioLights_MaxLength];
-
-    // SetLightsMode for direction 1
-    nk_err_t err1 = GpioLightsProxy_SetLightsMode(&impl->gpioClient1, 1, gpio1Color, result);
-    if (NK_EOK != err1) {
-        fprintf(stderr, "\x1B[31m%-13s [ERROR] SetLightsMode failed: req={\"direction\": 1, \"mode\"=\"%s\"}, err={code: %d, \"message\": \"%s\"}\x1B[0m\n",
-                        EntityName, gpio1Color, err1, GetErrMessage(err1));
-        // return NK_EOK;
-    }
-
-    // SetLightsMode for direction 2
-    nk_err_t err2 = GpioLightsProxy_SetLightsMode(&impl->gpioClient2, 2, gpio2Color, result);
-    if (NK_EOK != err2) {
-        fprintf(stderr, "\x1B[31m%-13s [ERROR] SetLightsMode failed: req={\"direction\": 2, \"mode\"=\"%s\"}, err={code: %d, \"message\": \"%s\"}\x1B[0m\n",
-                        EntityName, gpio2Color, err2, GetErrMessage(err2));
-        // return NK_EOK;
-    }
-
-    if ((NK_EOK != err1) && (NK_EOK != err2)) {
-        // Both falied
-        return NK_EOK;
-    }
-
-    if ((NK_EOK != err1) && (NK_EOK == err2)) {
-        // If LightsGPIO1 failed then rollback LightsGPIO2
-        err2 = GpioLightsProxy_SetLightsMode(&impl->gpioClient2, 2, impl2Color, result);
-
-        fprintf(stderr, "\x1B[35m%-13s [WARN ] Rollback SetLightsMode: req={\"direction\": 2, \"mode\"=\"%s\"}\x1B[0m\n",
-                        EntityName, impl2Color);
-
-    } else if ((NK_EOK == err1) && (NK_EOK != err2)) {
-        // If LightsGPIO2 failed then rollback LightsGPIO1
-        err1 = GpioLightsProxy_SetLightsMode(&impl->gpioClient1, 1, impl1Color, result);
-
-        fprintf(stderr, "\x1B[35m%-13s [WARN ] Rollback SetLightsMode: req={\"direction\": 1, \"mode\"=\"%s\"}\x1B[0m\n",
-                        EntityName, impl1Color);
-
+    nk_uint32_t result;
+    nk_err_t err = GpioLightsProxy_SetCrossLights(&impl->gpioProxy, crossMode, wayMode1, wayMode2, &result);
+    if (NK_EOK != err) {
+        fprintf(stderr, "\x1B[31m%-13s [ERROR] SetCrossLights failed: "
+                        "req={\"wayMode1\": \"%s\", \"wayMode2\"=\"%s\"}, "
+                        "err={code: %d, \"message\": \"%s\"}\x1B[0m\n",
+                        EntityName, wayMode1, wayMode2, err, GetErrMessage(err));
     } else {
-        // Update current mode
-        impl->mode = req->mode;
-
+        impl->mode = result;
     }
 
-    char msgBuffer[IEventLog_MaxTextLength];
-    snprintf(msgBuffer, IEventLog_MaxTextLength, "{\"mode\": 0x%08x}", impl->mode);
-    LogEvent(&impl->logProxy, 2, EntityName, msgBuffer);
+    // char msgBuffer[IEventLog_MaxTextLength];
+    // snprintf(msgBuffer, IEventLog_MaxTextLength, "{\"mode\": 0x%08x}", impl->mode);
+    // LogEvent(&impl->logProxy, 2, EntityName, msgBuffer);
 
-    // Set result
-    res->result = impl->mode;
+    // // Set result
+    // res->result = impl->mode;
 
     return NK_EOK;
 }
@@ -144,16 +115,14 @@ static struct ICrossMode *CreateICrossModeImpl(rtl_uint32_t mode)
 
     impl.mode = mode;
 
-    GpioLightsProxy_Init(&impl.gpioClient1, "lightsGpio1_channel", "lightsGpio.gpioLights");
-
-    GpioLightsProxy_Init(&impl.gpioClient2, "lightsGpio2_channel", "lightsGpio.gpioLights");
+    GpioLightsProxy_Init(&impl.gpioProxy, "gpiolights_channel", "lightsGpio.gpioLights");
 
     EventLogProxy_Init(&impl.logProxy);
 
-    const char *gpio1Color = GetColorName(impl.mode & 0xFF);
-    const char *gpio2Color = GetColorName((impl.mode >> 8) & 0xFF);
+    const char *wayMode1 = GetColorName(impl.mode & 0xFF);
+    const char *wayMode2 = GetColorName((impl.mode >> 8) & 0xFF);
     fprintf(stderr, "%-13s [DEBUG] Entity initialized: state={\"mode\": 0x%08x, \"lights\": [\"%s\", \"%s\"]}\n",
-                    EntityName, impl.mode, gpio1Color, gpio2Color);
+                    EntityName, impl.mode, wayMode1, wayMode2);
 
     LogEvent(&impl.logProxy, 0, EntityName, "\"Hello I'm CrossChecker!\"");
 
@@ -246,48 +215,45 @@ void GpioLightsProxy_Init(GpioLightsProxy *client,
     IGpioLights_proxy_init(&client->proxy, &client->transport.base, riid);
 }
 
-nk_err_t GpioLightsProxy_SetLightsMode(GpioLightsProxy *client, 
-                                       unsigned int direction,
-                                       const char *color,
-                                       char *result)
-{
+nk_err_t GpioLightsProxy_SetCrossLights(GpioLightsProxy *client,
+                                        nk_uint32_t crossMode,
+                                        const nk_char_t *wayMode1,
+                                        const nk_char_t *wayMode2,
+                                        nk_uint32_t *result
+                                        ) {
     // Request's transport structures
-    IGpioLights_SetLightsMode_req req;
+    IGpioLights_SetCrossLights_req req;
     char reqBuffer[IGpioLights_req_arena_size];
     nk_arena reqArena = NK_ARENA_INITIALIZER(reqBuffer, reqBuffer + IGpioLights_req_arena_size);
 
     // Response's transport structures
-    IGpioLights_SetLightsMode_res res;
+    IGpioLights_SetCrossLights_res res;
     char resBuffer[IGpioLights_res_arena_size];
     nk_arena resArena = NK_ARENA_INITIALIZER(resBuffer, resBuffer + IGpioLights_res_arena_size);
 
-    // Set requested direction
-    switch (direction) {
-        case 1: NkKosCopyStringToArena(&reqArena, &req.direction, "1"); break;
-        case 2: NkKosCopyStringToArena(&reqArena, &req.direction, "2"); break;
-        default: NkKosCopyStringToArena(&reqArena, &req.direction, "0"); break;
-    }
     // Set requested mode
-    NkKosCopyStringToArena(&reqArena, &req.mode, color);
+    req.lights.crossMode = crossMode;
+    NkKosCopyStringToArena(&reqArena, &req.lights.wayMode1, wayMode1);
+    NkKosCopyStringToArena(&reqArena, &req.lights.wayMode2, wayMode2);
 
     // Send request to LigthsGPIO
-    nk_err_t err = IGpioLights_SetLightsMode(&client->proxy.base, &req, &reqArena, &res, &resArena);
+    nk_err_t err = IGpioLights_SetCrossLights(&client->proxy.base, &req, &reqArena, &res, &resArena);
     if (NK_EOK != err) {
         // Forward error
         return err;
     }
 
-    // Translate response
-    nk_size_t size = 0;
-    const nk_char_t *resColor = nk_arena_get(nk_char_t, &resArena, &res.result, &size);
+    // // Translate response
+    // nk_size_t size = 0;
+    // const nk_char_t *resColor = nk_arena_get(nk_char_t, &resArena, &res.result, &size);
 
-    // Validate response
-    nk_assert(size > 0);                    // Result value is not empty
-    nk_assert(nk_strcmp(color, resColor) == 0); // Result value equals requested mode
+    // // Validate response
+    // nk_assert(size > 0);                    // Result value is not empty
+    // nk_assert(nk_strcmp(color, resColor) == 0); // Result value equals requested mode
 
-    // Write result
-    nk_size_t len = nk_strnlen(resColor, IGpioLights_MaxLength);
-    nk_strncpy(result, resColor, len);
+    // // Write result
+    // nk_size_t len = nk_strnlen(resColor, IGpioLights_MaxLength);
+    // nk_strncpy(result, resColor, len);
 
     return NK_EOK;
 }
