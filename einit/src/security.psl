@@ -158,13 +158,12 @@ request src=traffic_light.ControlSystem
 // Request messages: CrossChecker -> LightsGPIO
 request src=traffic_light.CrossChecker 
         dst=traffic_light.LightsGPIO 
-        endpoint=lightsGpio.lightsMode 
+        endpoint=lightsGpio.gpioLights 
         method=SetLightsMode {
 
-    // assert(message.value != "green")
     choice (re.select {text : message.direction}) {
         "1": {
-                choice (re.select {text : message.color}) {
+                choice (re.select {text : message.mode}) {
                     "blink-yellow": {
                             flow_direction1.enter {sid : dst_sid, state : "blink-yellow"}
                         }
@@ -187,7 +186,7 @@ request src=traffic_light.CrossChecker
                 }
             }
         "2": {
-                choice (re.select {text : message.color}) {
+                choice (re.select {text : message.mode}) {
                     "blink-yellow": {
                             flow_direction2.enter {sid : dst_sid, state : "blink-yellow"}
                         }

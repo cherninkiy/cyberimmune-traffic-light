@@ -71,8 +71,8 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} \
 
 include_directories ( include json-parser )
 
-nk_build_idl_files (traffic_light_idl_files NK_MODULE "traffic_light" IDL "${RESOURCES}/idl/ILightsMode.idl")
-nk_build_cdl_files (traffic_light_cdl_files IDL_TARGET traffic_light_idl_files NK_MODULE "traffic_light" CDL "${RESOURCES}/cdl/LightsMode.cdl")
+nk_build_idl_files (traffic_light_idl_files NK_MODULE "traffic_light" IDL "${RESOURCES}/idl/IGpioLights.idl")
+nk_build_cdl_files (traffic_light_cdl_files IDL_TARGET traffic_light_idl_files NK_MODULE "traffic_light" CDL "${RESOURCES}/cdl/GpioLights.cdl")
 
 nk_build_idl_files (traffic_light_idl_files NK_MODULE "traffic_light" IDL "${RESOURCES}/idl/ICrossMode.idl")
 nk_build_cdl_files (traffic_light_cdl_files IDL_TARGET traffic_light_idl_files NK_MODULE "traffic_light" CDL "${RESOURCES}/cdl/CrossMode.cdl")

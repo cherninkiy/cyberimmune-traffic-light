@@ -1,0 +1,19 @@
+/** Package with an "IGpioLights" interface declaration.
+ * 
+ *  The interface describes the main functionality of GPIO controller for lights components.
+ */
+
+package traffic_light.IGpioLights
+
+typedef string<1> Direction;
+
+const UInt32 MaxLength = 16;
+typedef string<MaxLength> LightsMode;
+
+interface {
+    // IGpioLights interface method.
+    // direction - Current traffic lights direction.
+    // mode      - Traffic lights mode: color or blinking color or their combination.
+    // result    - Result, same as mode if success else actual mode.
+    SetLightsMode(in Direction direction, in LightsMode mode, out LightsMode result);
+}

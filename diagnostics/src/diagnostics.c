@@ -88,11 +88,11 @@ static struct IEventLog* CreateIEventLogImpl()
     // Interface implementing object
     static struct IEventLogImpl impl = {
         .base = {&ops},
-        .stateControlSystem = -1,
-        .stateConnector = -1,
-        .stateCrossChecker = -1,
-        .stateLightsGPIO1 = -1,
-        .stateLightsGPIO2 = -1
+        .stateControlSystem = (rtl_uint32_t)-1,
+        .stateConnector     = (rtl_uint32_t)-1,
+        .stateCrossChecker  = (rtl_uint32_t)-1,
+        .stateLightsGPIO1   = (rtl_uint32_t)-1,
+        .stateLightsGPIO2   = (rtl_uint32_t)-1
     };
 
     // SysHealthProxy_Init(&impl.sysHealthProxy);

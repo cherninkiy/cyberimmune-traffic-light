@@ -10,9 +10,9 @@
 
 #define NK_USE_UNQUALIFIED_NAMES
 
-// ILightsMode Server
-#include <traffic_light/ILightsMode.idl.h>
-#include <traffic_light/LightsMode.cdl.h>
+// IGpioLights Server
+#include <traffic_light/IGpioLights.idl.h>
+#include <traffic_light/GpioLights.cdl.h>
 #include <traffic_light/LightsGPIO.edl.h>
 
 // IEventLog Client
@@ -24,27 +24,28 @@ static unsigned int Direction;
 
 #define DEFAULT_LIGHTS_MODE "blink-yellow"
 #define MAX_DIRECTION_LENGTH 12
+#define MAX_COLOR_LENGTH IGpioLights_MaxLength
 
-// ILightsMode implementing type
-typedef struct ILightsModeImpl {
+// IGpioLights implementing type
+typedef struct IGpioLightsImpl {
     // Base interface of object
-    struct ILightsMode base;
+    struct IGpioLights base;
     // Direction (i.e. 1, 2) if unspecified then 0
     char direction[MAX_DIRECTION_LENGTH];
-    // Current LightsMode
-    char mode[ILightsMode_MaxLength];
+    // Current GpioLights
+    char mode[MAX_COLOR_LENGTH];
     // Diagnostics
     EventLogProxy logProxy;
-} ILightsModeImpl;
+} IGpioLightsImpl;
 
-// ILightsMode.SetLightsMode method implementation
-static nk_err_t SetLightsMode_impl(struct ILightsMode *self,
-                                   const struct ILightsMode_SetLightsMode_req *req,
+// IGpioLights.SetLightsMode method implementation
+static nk_err_t SetLightsMode_impl(struct IGpioLights *self,
+                                   const struct IGpioLights_SetLightsMode_req *req,
                                    const struct nk_arena *req_arena,
-                                   struct ILightsMode_SetLightsMode_res *res,
-                                   struct nk_arena *res_arena)
-{
-    ILightsModeImpl *impl = (ILightsModeImpl *)self;
+                                   struct IGpioLights_SetLightsMode_res *res,
+                                   struct nk_arena *res_arena) {
+
+    IGpioLightsImpl *impl = (IGpioLightsImpl *)self;
 
     // // Initial State
     // fprintf(stderr, "%-13s [DEBUG] state={direction=%d, mode=\"%s\"}\n",
@@ -56,19 +57,19 @@ static nk_err_t SetLightsMode_impl(struct ILightsMode *self,
     nk_assert(size > 0);
     nk_assert(nk_strcmp(direction, impl->direction) == 0);
 
-    // Get requested color
-    const nk_char_t *color = nk_arena_get(nk_char_t, req_arena, &req->color, &size);
+    // Get requested mode
+    const nk_char_t *color = nk_arena_get(nk_char_t, req_arena, &req->mode, &size);
 
-    // Check color
+    // Check value
     nk_assert(size > 0);
 
     // Turn On/Off GPIO
-    fprintf(stderr, "%-13s [DEBUG] Request SetLightsMode: req={\"direction\": %s, \"color\"=\"%s\"} state={\"direction\": %s, \"value\"=\"%s\"}\n",
+    fprintf(stderr, "%-13s [DEBUG] Request SetGpioLights: req={\"direction\": %s, \"color\"=\"%s\"} state={\"direction\": %s, \"value\"=\"%s\"}\n",
                     EntityName, direction, color, impl->direction, impl->mode);
 
     // Update current mode
-    nk_memset(impl->mode, 0, ILightsMode_MaxLength);
-    nk_size_t len = nk_strnlen(color, ILightsMode_MaxLength);
+    nk_memset(impl->mode, 0, IGpioLights_MaxLength);
+    nk_size_t len = nk_strnlen(color, IGpioLights_MaxLength);
     nk_strncpy(impl->mode, color, len);
 
     // Write result
@@ -84,16 +85,16 @@ static nk_err_t SetLightsMode_impl(struct ILightsMode *self,
     return NK_EOK;
 }
 
-// ILightsMode object constructor
-static struct ILightsMode *CreateILightsModeImpl(unsigned int direction)
+// IGpioLights object constructor
+static struct IGpioLights *CreateIGpioLightsImpl(unsigned int direction)
 {
-    // Table of implementations of ILightsMode interface methods
-    static const struct ILightsMode_ops ops = {
+    // Table of implementations of IGpioLights interface methods
+    static const struct IGpioLights_ops ops = {
         .SetLightsMode = SetLightsMode_impl
     };
 
     // Interface implementing object
-    static struct ILightsModeImpl impl = {
+    static struct IGpioLightsImpl impl = {
         .base = {&ops},
         .mode = DEFAULT_LIGHTS_MODE
     };
@@ -140,8 +141,8 @@ int main(int argc, char** argv)
     struct nk_arena resArena = NK_ARENA_INITIALIZER(resBuffer, resBuffer + LightsGPIO_entity_res_arena_size);
 
     // Component dispatcher
-    LightsMode_component component;
-    LightsMode_component_init(&component, CreateILightsModeImpl(Direction));
+    GpioLights_component component;
+    GpioLights_component_init(&component, CreateIGpioLightsImpl(Direction));
 
     // Entity dispatcher
     LightsGPIO_entity entity;

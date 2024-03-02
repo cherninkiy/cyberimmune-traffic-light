@@ -13,8 +13,8 @@
 #include <traffic_light/ICrossMode.idl.h>
 #include <traffic_light/CrossMode.cdl.h>
 #include <traffic_light/CrossChecker.edl.h>
-// ILightsMode Client
-#include <traffic_light/ILightsMode.idl.h>
+// IGpioLights Client
+#include <traffic_light/IGpioLights.idl.h>
 // IEventLog Client
 #include "eventlog_proxy.h"
 
@@ -30,8 +30,8 @@ typedef struct GpioLightsProxy {
     NkKosTransport transport;
     // TODO: Exclude if proxy releases all resources
     Handle channel;
-    // ILightsMode client proxy
-    ILightsMode_proxy proxy;
+    // IGpioLights client proxy
+    IGpioLights_proxy proxy;
 } GpioLightsProxy;
 
 void GpioLightsProxy_Init(GpioLightsProxy *client,
@@ -76,7 +76,7 @@ static nk_err_t SetCrossMode_impl(struct ICrossMode *self,
     fprintf(stderr, "%-13s [DEBUG] Request SetCrossMode: req=[\"%s\", \"%s\"] state=[\"%s\", \"%s\"]\n",
                     EntityName, gpio1Color, gpio2Color, impl1Color, impl2Color);
 
-    nk_char_t result[ILightsMode_MaxLength];
+    nk_char_t result[IGpioLights_MaxLength];
 
     // SetLightsMode for direction 1
     nk_err_t err1 = GpioLightsProxy_SetLightsMode(&impl->gpioClient1, 1, gpio1Color, result);
@@ -144,9 +144,9 @@ static struct ICrossMode *CreateICrossModeImpl(rtl_uint32_t mode)
 
     impl.mode = mode;
 
-    GpioLightsProxy_Init(&impl.gpioClient1, "lightsGpio1_channel", "lightsGpio.lightsMode");
+    GpioLightsProxy_Init(&impl.gpioClient1, "lightsGpio1_channel", "lightsGpio.gpioLights");
 
-    GpioLightsProxy_Init(&impl.gpioClient2, "lightsGpio2_channel", "lightsGpio.lightsMode");
+    GpioLightsProxy_Init(&impl.gpioClient2, "lightsGpio2_channel", "lightsGpio.gpioLights");
 
     EventLogProxy_Init(&impl.logProxy);
 
@@ -161,7 +161,7 @@ static struct ICrossMode *CreateICrossModeImpl(rtl_uint32_t mode)
 }
 
 // CrossChecker entity entry point
-int main(int argc, const char *argv[])
+int main(void)
 {
     ICrossMode* impl = CreateICrossModeImpl(DEFAILT_CROSS_MODE);
 
@@ -243,7 +243,7 @@ void GpioLightsProxy_Init(GpioLightsProxy *client,
     // Initialize proxy object by specifying transport (&transport)
     // and lights gpio interface identifier (riid). Each method of the
     // proxy object will be implemented by sending a request to the lights gpio.
-    ILightsMode_proxy_init(&client->proxy, &client->transport.base, riid);
+    IGpioLights_proxy_init(&client->proxy, &client->transport.base, riid);
 }
 
 nk_err_t GpioLightsProxy_SetLightsMode(GpioLightsProxy *client, 
@@ -252,14 +252,14 @@ nk_err_t GpioLightsProxy_SetLightsMode(GpioLightsProxy *client,
                                        char *result)
 {
     // Request's transport structures
-    ILightsMode_SetLightsMode_req req;
-    char reqBuffer[ILightsMode_req_arena_size];
-    nk_arena reqArena = NK_ARENA_INITIALIZER(reqBuffer, reqBuffer + ILightsMode_req_arena_size);
+    IGpioLights_SetLightsMode_req req;
+    char reqBuffer[IGpioLights_req_arena_size];
+    nk_arena reqArena = NK_ARENA_INITIALIZER(reqBuffer, reqBuffer + IGpioLights_req_arena_size);
 
     // Response's transport structures
-    ILightsMode_SetLightsMode_res res;
-    char resBuffer[ILightsMode_res_arena_size];
-    nk_arena resArena = NK_ARENA_INITIALIZER(resBuffer, resBuffer + ILightsMode_res_arena_size);
+    IGpioLights_SetLightsMode_res res;
+    char resBuffer[IGpioLights_res_arena_size];
+    nk_arena resArena = NK_ARENA_INITIALIZER(resBuffer, resBuffer + IGpioLights_res_arena_size);
 
     // Set requested direction
     switch (direction) {
@@ -268,10 +268,10 @@ nk_err_t GpioLightsProxy_SetLightsMode(GpioLightsProxy *client,
         default: NkKosCopyStringToArena(&reqArena, &req.direction, "0"); break;
     }
     // Set requested mode
-    NkKosCopyStringToArena(&reqArena, &req.color, color);
+    NkKosCopyStringToArena(&reqArena, &req.mode, color);
 
     // Send request to LigthsGPIO
-    nk_err_t err = ILightsMode_SetLightsMode(&client->proxy.base, &req, &reqArena, &res, &resArena);
+    nk_err_t err = IGpioLights_SetLightsMode(&client->proxy.base, &req, &reqArena, &res, &resArena);
     if (NK_EOK != err) {
         // Forward error
         return err;
@@ -286,7 +286,7 @@ nk_err_t GpioLightsProxy_SetLightsMode(GpioLightsProxy *client,
     nk_assert(nk_strcmp(color, resColor) == 0); // Result value equals requested mode
 
     // Write result
-    nk_size_t len = nk_strnlen(resColor, ILightsMode_MaxLength);
+    nk_size_t len = nk_strnlen(resColor, IGpioLights_MaxLength);
     nk_strncpy(result, resColor, len);
 
     return NK_EOK;
