@@ -38,8 +38,8 @@ static const char* ConsoleColors[] = {
     "\x1B[43myellow\x1B[0m",
     "\x1B[42mgreen\x1B[0m",
     "\x1B[41mred\x1B[0m-\x1B[43myellow\x1B[0m",
-    "\x1B[40mblink\x1B[0m-\x1B[43myellow\x1B[0m",
-    "\x1B[40mblink\x1B[0m-\x1B[42mgreen\x1B[0m"
+    "\x1B[43mblink-yellow\x1B[0m",
+    "\x1B[42mblink-green\x1B[0m"
 };
 
 inline static const char* GetConsoleColor(unsigned int mode) {

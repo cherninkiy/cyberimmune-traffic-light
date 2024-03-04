@@ -46,6 +46,15 @@
         "json.h": "c",
         "ioctl.h": "c",
         "crossmode_proxy.h": "c",
-        "itrafficmode.idl.h": "c"
+        "itrafficmode.idl.h": "c",
+        "crosscontroller.edl.h": "c",
+        "mutex.h": "c",
+        "thread.h": "c",
+        "retcode.h": "c",
+        "crosscontrol.cdl.h": "c",
+        "ilightsgpio.idl.h": "c",
+        "thread_api.h": "c",
+        "lights_gpio_proxy.h": "c",
+        "arena.h": "c"
     }
 }

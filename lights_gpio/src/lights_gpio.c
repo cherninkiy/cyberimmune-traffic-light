@@ -49,19 +49,19 @@ static nk_err_t SetCrossLights_impl(struct ILightsGpio *self,
 
     // Current mode
     nk_uint32_t curCrossController = impl->mode;
-    const nk_char_t *curWayMode1 = GetConsoleColor(curCrossController & 0xFF);
-    const nk_char_t *curWayMode2 = GetConsoleColor((curCrossController >> 8) & 0xFF);
+    const nk_char_t *curDir1Mode = GetConsoleColor(curCrossController & 0xFF);
+    const nk_char_t *curDir2Mode = GetConsoleColor((curCrossController >> 8) & 0xFF);
 
     // Requested mode
     nk_uint32_t reqCrossController = req->lights.crossMode;
-    const nk_char_t *reqWayMode1 = GetConsoleColor(reqCrossController & 0xFF);
-    const nk_char_t *reqWayMode2 = GetConsoleColor((reqCrossController >> 8) & 0xFF);
+    const nk_char_t *reqDir1Mode = GetConsoleColor(reqCrossController & 0xFF);
+    const nk_char_t *reqDir2Mode = GetConsoleColor((reqCrossController >> 8) & 0xFF);
 
     fprintf(stderr, "%-16s [DEBUG] Request SetCrossLights: \n"
                     "current={\"mode\": 0x%08x, \"lights\": [\"%s\", \"%s\"]}\n"
                     "request={\"mode\": 0x%08x, \"lights\": [\"%s\", \"%s\"]}\n",
-                    EntityName, curCrossController, curWayMode1, curWayMode2,
-                                reqCrossController, reqWayMode1, reqWayMode2);
+                    EntityName, curCrossController, curDir1Mode, curDir2Mode,
+                                reqCrossController, reqDir1Mode, reqDir2Mode);
 
     // Some GPIO-related code
     // ......................
@@ -91,11 +91,11 @@ static struct ILightsGpio *CreateILightsGpioImpl() {
 
     EventLogProxy_Init(&impl.logProxy);
 
-    const nk_char_t *wayMode1 = GetConsoleColor(impl.mode & 0xFF);
-    const nk_char_t *wayMode2 = GetConsoleColor((impl.mode >> 8) & 0xFF);
+    const nk_char_t *dir1Mode = GetConsoleColor(impl.mode & 0xFF);
+    const nk_char_t *dir2Mode = GetConsoleColor((impl.mode >> 8) & 0xFF);
     fprintf(stderr, "%-16s [DEBUG] Entity initialized: "
                     "state={\"mode\": 0x%08x, \"lights\": [\"%s\", \"%s\"]}\n",
-                    EntityName, impl.mode, wayMode1, wayMode2);
+                    EntityName, impl.mode, dir1Mode, dir2Mode);
 
     LogEvent(&impl.logProxy, 0, EntityName, "\"Hello I'm LightsGPIO!\"");
 

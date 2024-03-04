@@ -7,6 +7,10 @@
 
 package traffic_light.ICrossControl
 
+const UInt32 BehaviorRegulated = 1;
+const UInt32 BehaviorUnregulated = 2;
+const UInt32 BehaviorManual = 3;
+
 const UInt32 Direction1Red          = 0x0001;
 const UInt32 Direction1Yellow       = 0x0002;
 const UInt32 Direction1Green        = 0x0004;
@@ -19,29 +23,23 @@ const UInt32 Direction2Blink        = 0x0800;
 
 const UInt32 MaxLength = 16;
 
-// 'unregulated' | 'regulated' | 'manual'
-typedef string<MaxLength> Behavior;
-
 // Color name or blinking color or their combination.
 typedef string<MaxLength> LightsMode;
 
 // Cross shedule
 struct CrossSchedule {
-    // Behavior (string)
-    Behavior behavior;
-    // 'green' duration for way1 if 'regulated' behavior
-    UInt32 way1Duration;
-    // LightsMode for way1 if 'manual' behavior (string)
-    LightsMode way1Mode;
-    // 'green' duration for way2 if 'regulated' behavior 
-    UInt32 way2Duration;
-    // LightsMode for way2 if 'manual' behavior (string)
-    LightsMode way2Mode;
+    // Behavior
+    UInt32 behavior;
+    // Cross mode
+    UInt32 crossMode;
+    // 'green' duration for dir1 if 'regulated' behavior
+    UInt32 dir1Duration;
+    // 'green' duration for dir2 if 'regulated' behavior 
+    UInt32 dir2Duration;
 }
 
 interface {
     // The method should implement maintenance for GPIO connected lights components.
-    // lights - Cross lights mode to set.
-    // result - Result cross mode (binary).
-    SetCrossSchedule(in CrossSchedule schedule, out UInt32 result);
+    // lights - Cross schedule to set.
+    SetCrossSchedule(in CrossSchedule schedule);
 }

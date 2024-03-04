@@ -33,13 +33,13 @@ const UInt32 MaxLength = 16;
 // Color name or blinking color or their combination.
 typedef string<MaxLength> LightsMode;
 
-// Ligths modes for crossway.
+// Ligths modes for crossdir.
 struct CrossLights {
     // Cross mode (binary)
     UInt32 crossMode;
-    // Way modes (string)
-    LightsMode wayMode1;
-    LightsMode wayMode2;
+    // Directions modes (string)
+    LightsMode dir1Mode;
+    LightsMode dir2Mode;
 }
 
 interface {

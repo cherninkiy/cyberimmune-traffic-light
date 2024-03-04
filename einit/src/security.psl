@@ -167,7 +167,7 @@ request src=traffic_light.CrossController
 
     /** Transitions policy */
 
-    choice (re.select {text : message.lights.wayMode1}) {
+    choice (re.select {text : message.lights.dir1Mode}) {
         "blink-yellow": {
                 flow_direction1.enter {sid : dst_sid, state : "blink-yellow"}
             }
@@ -189,7 +189,7 @@ request src=traffic_light.CrossController
         _: deny()
     }
 
-    choice (re.select {text : message.lights.wayMode2}) {
+    choice (re.select {text : message.lights.dir2Mode}) {
         "blink-yellow": {
                 flow_direction2.enter {sid : dst_sid, state : "blink-yellow"}
             }

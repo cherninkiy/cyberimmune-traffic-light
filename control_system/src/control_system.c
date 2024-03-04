@@ -63,17 +63,20 @@ typedef struct CrossControlProxy {
     // TODO: Exclude if proxy releases all resources
     Handle channel;
 
+    
+
     ICrossControl_proxy proxy;
 } CrossControlProxy;
 
 
 int CrossControlProxy_Init(CrossControlProxy *client, const char *channelName, const char *interfaceName);
 
-nk_err_t CrossControlProxy_SetCrossSchedule(CrossControlProxy *client, TrafficModeData *schedule, nk_uint32_t *duration);
+nk_err_t CrossControlProxy_SetCrossSchedule(CrossControlProxy *client, TrafficModeData *schedule);
 
 void SelfDiagnostic(EventLogProxy *client, sys_health_data *sysHealthData);
 
-int main(int argc, char** argv) {
+int main(void) {
+
     TrafficModeProxy trafficModeProxy;
     TrafficModeProxy_Init(&trafficModeProxy, "trafficmode_channel", "trafficMode.trafficMode");
 
@@ -84,7 +87,6 @@ int main(int argc, char** argv) {
     EventLogProxy_Init(&eventLogProxy);
     LogEvent(&eventLogProxy, 0, EntityName, "\"Hello I'm ControlSystem!\"");
 
-    nk_uint32_t duration = 1;
     TrafficModeData trafficMode;
     sys_health_data sysHealthData;
     do {
@@ -92,26 +94,23 @@ int main(int argc, char** argv) {
         fprintf(stderr, "%-16s [DEBUG] Self Diagnostic Data: %d\n", EntityName, sysHealthData.controlSystem);
 
         TrafficModeProxy_GetTrafficMode(&trafficModeProxy, &trafficMode);
+        // fprintf(stderr, "%-16s [DEBUG] Traffic Mode Data: "
+        //                 "response={\"mode\": \"%s\", \"direction_1_duration\": \"%d\", \"direction_1_color\": \"%s\"\n"
+        //                 "                            \"direction_2_duration\": \"%d\", \"direction_2_color\": \"%s\"}\n",
+        //                 EntityName, trafficMode.mode, trafficMode.duration1, trafficMode.color1,
+        //                 trafficMode.duration2, trafficMode.color2);
 
         nk_err_t err = NK_EOK;
         if (nk_strcmp(trafficMode.mode, "unregulated") == 0) {
-            nk_uint32_t unregulatedMode = ICrossControl_Direction1Yellow 
-                                        | ICrossControl_Direction1Blink
-                                        | ICrossControl_Direction2Yellow
-                                        | ICrossControl_Direction2Blink;
-            err = CrossControlProxy_SetCrossSchedule(&crossModeProxy, &trafficMode, &duration);
+            err = CrossControlProxy_SetCrossSchedule(&crossModeProxy, &trafficMode);
         }
         
         if (nk_strcmp(trafficMode.mode, "regulated") == 0) {
-            // err = CrossControlProxy_SetCrossSchedule(&crossModeProxy, 0x0C0C);
-            err = CrossControlProxy_SetCrossSchedule(&crossModeProxy, &trafficMode, &duration);
+            err = CrossControlProxy_SetCrossSchedule(&crossModeProxy, &trafficMode);
         }
 
         if (nk_strcmp(trafficMode.mode, "manual") == 0) {
-            // nk_uint32_t direction1 = GetColorMode(trafficMode.color1);
-            // nk_uint32_t direction2 = GetColorMode(trafficMode.color2);
-            // err = CrossControllerProxy_SetCrossController(&crossModeProxy, (direction1 << 8) | direction2);
-            err = CrossControlProxy_SetCrossSchedule(&crossModeProxy, &trafficMode, &duration);
+            err = CrossControlProxy_SetCrossSchedule(&crossModeProxy, &trafficMode);
         }
 
         if (err != NK_EOK) {
@@ -119,9 +118,10 @@ int main(int argc, char** argv) {
                             EntityName, trafficMode.mode, trafficMode.color1, trafficMode.color2, err, GetErrMessage(err));
         }
 
-        for (int i = 0; i < duration; ++i) {
-            KosThreadSleep(1000);
-        }
+        //for (int i = 0; i < duration; ++i) {
+        //    KosThreadSleep(1000);
+        //}
+        KosThreadSleep(10000);
     } while (true);
 
     return EXIT_SUCCESS;
@@ -225,7 +225,7 @@ void SelfDiagnostic(EventLogProxy *client, sys_health_data *sysHealthData) {
     sysHealthData->connector = res.state.connector;
     sysHealthData->crossChecker = res.state.crossController;
     sysHealthData->lightsGPIO = res.state.lightsGpio;
-    sysHealthData->diagnostics = err;
+    sysHealthData->diagnostics = err == (NK_EOK ? 0 : 1);
 }
 
 
@@ -258,31 +258,29 @@ int CrossControlProxy_Init(CrossControlProxy *client, const char *channelName, c
     return 0;
 }
 
-nk_err_t CrossControlProxy_SetCrossSchedule(CrossControlProxy *client, TrafficModeData *schedule, nk_uint32_t *duration) {
+nk_err_t CrossControlProxy_SetCrossSchedule(CrossControlProxy *client, TrafficModeData *schedule) {
     // Request's transport structures
     ICrossControl_SetCrossSchedule_req req;
     char reqBuffer[ICrossControl_req_arena_size];
     nk_arena reqArena = NK_ARENA_INITIALIZER(reqBuffer, reqBuffer + ICrossControl_req_arena_size);
 
-    // Response's transport structures
+    // Request's transport structures
     ICrossControl_SetCrossSchedule_res res;
-    char resBuffer[ICrossControl_res_arena_size];
-    nk_arena resArena = NK_ARENA_INITIALIZER(resBuffer, resBuffer + ICrossControl_res_arena_size);
 
     // Fill request data
-    NkKosCopyStringToArena(&reqArena, &req.schedule.behavior, schedule->mode);
-    req.schedule.way1Duration = schedule->duration1;
-    NkKosCopyStringToArena(&reqArena, &req.schedule.way1Mode, schedule->color1);
-    req.schedule.way2Duration = schedule->duration2;
-    NkKosCopyStringToArena(&reqArena, &req.schedule.way2Mode, schedule->color2);
+    if (nk_strcmp(schedule->mode, "regulated") == 0) {
+        req.schedule.behavior = ICrossControl_BehaviorRegulated;
+    } else if (nk_strcmp(schedule->mode, "unregulated") == 0) {
+        req.schedule.behavior = ICrossControl_BehaviorUnregulated;
+    } else if (nk_strcmp(schedule->mode, "manual") == 0) {
+        req.schedule.behavior = ICrossControl_BehaviorManual;
+    }
+    req.schedule.crossMode = (GetColorMode(schedule->color2) << 8) | GetColorMode(schedule->color1);
+    req.schedule.dir1Duration = schedule->duration1;
+    req.schedule.dir2Duration = schedule->duration2;
 
     // Call dispatcher interface
-    nk_err_t err = ICrossControl_SetCrossSchedule(&client->proxy.base, &req, &reqArena, &res, &resArena);
-    if (NK_EOK != err) {
-        *duration = res.result;
-    } else {
-        *duration = 0;
-    }
+    ICrossControl_SetCrossSchedule(&client->proxy.base, &req, &reqArena, &res, NULL);
 
     return NK_EOK;
 }

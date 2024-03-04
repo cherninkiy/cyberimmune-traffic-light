@@ -8,36 +8,6 @@ GET http://localhost:8081/test HTTP/1.1
 GET http://localhost:8081/mode/12345 HTTP/1.1
 
 
-### post manual mode "green" - "green" (ERROR)
-POST http://localhost:8081/manual HTTP/1.1
-content-type: application/json
-
-{
-    "mode":"manual", 
-    "direction_1": "green", 
-    "direction_2": "green"
-}
-
-### post manual mode "red" - "red" (OK)
-POST http://localhost:8081/manual HTTP/1.1
-content-type: application/json
-
-{
-    "mode":"manual", 
-    "direction_1": "red", 
-    "direction_2": "red"
-}
-
-### post regulated mode  "red" - "green" (ERROR)
-POST http://localhost:8081/manual HTTP/1.1
-content-type: application/json
-
-{
-    "mode":"manual", 
-    "direction_1": "red", 
-    "direction_2": "green"
-}
-
 ### post unregulated mode "blink-yellow" - "blink-yellow" (OK)
 POST http://localhost:8081/manual HTTP/1.1
 content-type: application/json
@@ -48,7 +18,7 @@ content-type: application/json
     "direction_2": "blink-yellow"
 }
 
-### post unregulated mode "blink-yellow" - "blink-yellow" (OK)
+### post regulated mode "green" - "red" (OK)
 POST http://localhost:8081/manual HTTP/1.1
 content-type: application/json
 
@@ -68,5 +38,4 @@ content-type: application/json
     "tl-status": "ok", 
     "tl-mode-id": "aaabbbccc"
 }
-
 
