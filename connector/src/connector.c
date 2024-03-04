@@ -37,7 +37,7 @@
 #define HOST_PORT               8081
 #define NUM_RETRIES             10
 #define MSG_BUF_SIZE            1024
-#define MSG_CHUNK_BUF_SIZE      256
+#define MSG_CHUNK_BUF_SIZE      512
 #define SA struct sockaddr
 
 
@@ -136,8 +136,7 @@ int send_self_diagnostics(sys_health_data *diagnostic_data) {
     if (sockfd == -1) {
         fprintf(stderr, "%-16s [ERROR] Socket creation failed!\n", EntityName);
         return EXIT_FAILURE;
-    }
-    else {
+    } else {
         // fprintf(stderr, "%-16s [DEBUG] Socket successfully created\n", EntityName);
     }
     bzero(&servaddr, sizeof(servaddr));
@@ -177,14 +176,14 @@ int send_self_diagnostics(sys_health_data *diagnostic_data) {
     size_t n;
 
     snprintf(request_data, MSG_CHUNK_BUF_SIZE,
-        "POST /diagnostics HTTP/1.1\r\n"
-        "content-type: application/json\n\n"
-        "{"
-        "    \"ControlSystem\": %d," 
-        "    \"Connector\": %d,"
-        "    \"CrossController\": %d,"
-        "    \"LightsGPIO\": %d,"
-        "    \"LightsDiagnostics\": %d"
+        "POST /diagnostics HTTP/1.1\n"
+        "Content-Type: application/json\n\n"
+        "{\n"
+        "    \"ControlSystem\":   \"0x%08x\",\n" 
+        "    \"Connector\":       \"0x%08x\",\n"
+        "    \"CrossController\": \"0x%08x\",\n"
+        "    \"LightsGPIO\":      \"0x%08x\",\n"
+        "    \"Diagnostics\":     \"0x%08x\"\n"
         "}",
         diagnostic_data->controlSystem,
         diagnostic_data->connector,
@@ -196,22 +195,18 @@ int send_self_diagnostics(sys_health_data *diagnostic_data) {
     request_len = strlen(request_data);
     response_data[0] = 0;
     response_data_chunk[0] = 0;
-    // fprintf(stderr, "%s, sending request: %s\n len: %d\n", EntityName, request_data, request_len);
+    fprintf(stderr, "%s, sending request: %s\n len: %d\n", EntityName, request_data, request_len);
 
     /// Write the request
-    if (write(sockfd, request_data, request_len) >= 0)
-    {
-        // fprintf(stderr, "%s request sent, reading response..\n", EntityName);
+    if (write(sockfd, request_data, request_len) >= 0) {
+        fprintf(stderr, "%s request sent, reading response..\n", EntityName);
         /// Read the response
-        while ((n = read(sockfd, response_data_chunk, MSG_BUF_SIZE)) > 0)
-        {
+        while ((n = read(sockfd, response_data_chunk, MSG_BUF_SIZE)) > 0) {
             strcat(response_data, response_data_chunk);
-            // fprintf(stderr, "%s response data: \n%s\n", EntityName, response_data);
+            fprintf(stderr, "%s response data: \n%s\n", EntityName, response_data);
         }
     }
-    // fprintf(stderr, "%s read data: %s..\n", EntityName, response_data);
-    // int rc = parse_response(response_data, mode);
-    // fprintf(stderr, "%s response parsing result: \n%d\n", EntityName, rc);
+    fprintf(stderr, "%s read data: %s..\n", EntityName, response_data);
 
     // close the socket
     close(sockfd);
@@ -223,7 +218,7 @@ int send_self_diagnostics(sys_health_data *diagnostic_data) {
 typedef struct ITrafficModeImpl {
     // Base interface of object
     struct ITrafficMode base;
-    // Diagnostics
+    // Diagnostics client
     EventLogProxy logProxy;
 } ITrafficModeImpl;
 
@@ -232,8 +227,8 @@ static nk_err_t GetTrafficMode_impl(struct ITrafficMode *self,
                                    const struct ITrafficMode_GetTrafficMode_req *req,
                                    const struct nk_arena *req_arena,
                                    struct ITrafficMode_GetTrafficMode_res *res,
-                                   struct nk_arena *res_arena)
-{
+                                   struct nk_arena *res_arena) {
+
     ITrafficModeImpl *impl = (ITrafficModeImpl *)self;
 
     traffic_light_mode mode;
@@ -255,12 +250,39 @@ static nk_err_t GetTrafficMode_impl(struct ITrafficMode *self,
     return NK_EOK;
 }
 
+
+// ITrafficMode.SendDiagnostics method implementation
+static nk_err_t SendDiagnostics_impl(struct ITrafficMode *self,
+                                   const struct ITrafficMode_SendDiagnostics_req *req,
+                                   const struct nk_arena *req_arena,
+                                   struct ITrafficMode_SendDiagnostics_res *res,
+                                   struct nk_arena *res_arena) {
+    ITrafficModeImpl *impl = (ITrafficModeImpl *)self;
+
+    sys_health_data sysHealth;
+    sysHealth.controlSystem = req->data.controlSystem;
+    sysHealth.crossChecker = req->data.crossController;
+    sysHealth.lightsGPIO = req->data.lightsGpio;
+    sysHealth.diagnostics = req->data.diagnostics;
+
+    int rc = send_self_diagnostics(&sysHealth);
+    fprintf(stderr, "%-16s [DEBUG] Send diagnostics status: %s\n", EntityName, rc == EXIT_SUCCESS ? "OK" : "FAILED");
+
+    // char msgBuffer[IEventLog_MaxTextLength];
+    // snprintf(msgBuffer, IEventLog_MaxTextLength,
+    //          "{\"mode\": \"%s\", \"color1\": \"%s\", \"color2\": \"%s\"}",
+    //          mode.mode, mode.direction_1_color, mode.direction_2_color);
+    // LogEvent(&impl->logProxy, 2, EntityName, msgBuffer);
+
+    return NK_EOK;
+}
+
 // ITrafficMode object constructor
-static struct ITrafficMode *CreateITrafficModeImpl()
-{
+static struct ITrafficMode *CreateITrafficModeImpl() {
     // Table of implementations of ITrafficMode interface methods
     static const struct ITrafficMode_ops ops = {
-        .GetTrafficMode = GetTrafficMode_impl
+        .GetTrafficMode = GetTrafficMode_impl,
+        .SendDiagnostics = SendDiagnostics_impl
     };
 
     // Interface implementing object
@@ -269,9 +291,6 @@ static struct ITrafficMode *CreateITrafficModeImpl()
     };
 
     EventLogProxy_Init(&impl.logProxy);
-
-    // fprintf(stderr, "%-16s [DEBUG] Entity initialized: state={\"direction\": %s, \"mode\": \"%s\"}\n",
-    //                 EntityName, impl.direction, impl.mode);
 
     LogEvent(&impl.logProxy, 0, EntityName, "\"Hello I'm Connector!\"");
 

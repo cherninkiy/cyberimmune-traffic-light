@@ -118,6 +118,12 @@ int main(void) {
                             EntityName, trafficMode.mode, trafficMode.color1, trafficMode.color2, err, GetErrMessage(err));
         }
 
+        err = TrafficModeProxy_SendDiagnostics(&trafficModeProxy, &sysHealthData);
+        if (err != NK_EOK) {
+            fprintf(stderr, "\x1B[31m%-16s [ERROR] SendDiagnostics failed: err={code: %d, \"message\": \"%s\"}\x1B[0m\n",
+                            EntityName, err, GetErrMessage(err));
+        }
+
         //for (int i = 0; i < duration; ++i) {
         //    KosThreadSleep(1000);
         //}
@@ -125,6 +131,41 @@ int main(void) {
     } while (true);
 
     return EXIT_SUCCESS;
+}
+
+void SelfDiagnostic(EventLogProxy *client, sys_health_data *sysHealthData) {
+    // Request's transport structures
+    IEventLog_Collect_req req;
+    char reqBuffer[IEventLog_Collect_req_arena_size];
+    nk_arena reqArena = NK_ARENA_INITIALIZER(reqBuffer, reqBuffer + IEventLog_Collect_req_arena_size);
+
+    // Request's transport structures
+    IEventLog_Collect_res res;
+    char resBuffer[IEventLog_Collect_res_arena_size];
+    nk_arena resArena = NK_ARENA_INITIALIZER(resBuffer, resBuffer + IEventLog_Collect_res_arena_size);
+
+    nk_err_t err = NK_EOK;
+
+    // Set event code
+    req.event.code = 1;
+
+    // Set event source
+    err = NkKosCopyStringToArena(&reqArena, &req.event.source, EntityName);
+    nk_assert(err == NK_EOK);
+
+    // Set event text
+    err = NkKosCopyStringToArena(&reqArena, &req.event.text, "SelfDiagnostic");
+    nk_assert(err == NK_EOK);
+
+    // Send request to Diagnostics
+    err = IEventLog_Collect(&client->proxy.base, &req, &reqArena, &res, &resArena);
+    nk_assert(err == NK_EOK);
+
+    sysHealthData->controlSystem = res.state.controlSystem;
+    sysHealthData->connector = res.state.connector;
+    sysHealthData->crossChecker = res.state.crossController;
+    sysHealthData->lightsGPIO = res.state.lightsGpio;
+    sysHealthData->diagnostics = err == (NK_EOK ? 0 : 1);
 }
 
 int TrafficModeProxy_Init(TrafficModeProxy *client, const char *channelName, const char *interfaceName) {
@@ -193,41 +234,31 @@ nk_err_t TrafficModeProxy_GetTrafficMode(TrafficModeProxy *client, TrafficModeDa
     return NK_EOK;
 }
 
-void SelfDiagnostic(EventLogProxy *client, sys_health_data *sysHealthData) {
+nk_err_t TrafficModeProxy_SendDiagnostics(TrafficModeProxy *client, sys_health_data *sysHealthData) {
     // Request's transport structures
-    IEventLog_Collect_req req;
-    char reqBuffer[IEventLog_Collect_req_arena_size];
-    nk_arena reqArena = NK_ARENA_INITIALIZER(reqBuffer, reqBuffer + IEventLog_Collect_req_arena_size);
+    ITrafficMode_SendDiagnostics_req req;
+    char reqBuffer[ITrafficMode_req_arena_size];
+    nk_arena reqArena = NK_ARENA_INITIALIZER(reqBuffer, reqBuffer + ITrafficMode_req_arena_size);
 
-    // Request's transport structures
-    IEventLog_Collect_res res;
-    char resBuffer[IEventLog_Collect_res_arena_size];
-    nk_arena resArena = NK_ARENA_INITIALIZER(resBuffer, resBuffer + IEventLog_Collect_res_arena_size);
+    // Response's transport structures
+    ITrafficMode_SendDiagnostics_res res;
+    char resBuffer[ITrafficMode_res_arena_size];
+    nk_arena resArena = NK_ARENA_INITIALIZER(resBuffer, resBuffer + ITrafficMode_res_arena_size);
 
-    nk_err_t err = NK_EOK;
+    req.data.controlSystem = sysHealthData->controlSystem;
+    req.data.connector = sysHealthData->connector;
+    req.data.crossController = sysHealthData->crossChecker;
+    req.data.lightsGpio = sysHealthData->lightsGPIO;
+    req.data.diagnostics = sysHealthData->diagnostics;
 
-    // Set event code
-    req.event.code = 1;
+    nk_err_t rcResult = ITrafficMode_SendDiagnostics(&client->proxy.base, &req, &reqArena, &res, &resArena);
 
-    // Set event source
-    err = NkKosCopyStringToArena(&reqArena, &req.event.source, EntityName);
-    nk_assert(err == NK_EOK);
+    if (NK_EOK != rcResult) {
+        return rcResult;
+    }
 
-    // Set event text
-    err = NkKosCopyStringToArena(&reqArena, &req.event.text, "SelfDiagnostic");
-    nk_assert(err == NK_EOK);
-
-    // Send request to Diagnostics
-    err = IEventLog_Collect(&client->proxy.base, &req, &reqArena, &res, &resArena);
-    nk_assert(err == NK_EOK);
-
-    sysHealthData->controlSystem = res.state.controlSystem;
-    sysHealthData->connector = res.state.connector;
-    sysHealthData->crossChecker = res.state.crossController;
-    sysHealthData->lightsGPIO = res.state.lightsGpio;
-    sysHealthData->diagnostics = err == (NK_EOK ? 0 : 1);
+    return NK_EOK;
 }
-
 
 int CrossControlProxy_Init(CrossControlProxy *client, const char *channelName, const char *interfaceName) {
     /**

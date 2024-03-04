@@ -21,7 +21,17 @@ struct TrafficMode {
     ModeColor color2;
 }
 
+struct SysHealth {
+    UInt32 controlSystem;
+    UInt32 connector;
+    UInt32 crossController;
+    UInt32 lightsGpio;
+    UInt32 diagnostics;
+}
+
 interface {
     /* ITrafficMode interface method */
     GetTrafficMode(out TrafficMode mode);
+
+    SendDiagnostics(in SysHealth data);
 }

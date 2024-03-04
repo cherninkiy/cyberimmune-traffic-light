@@ -55,6 +55,7 @@
         "ilightsgpio.idl.h": "c",
         "thread_api.h": "c",
         "lights_gpio_proxy.h": "c",
-        "arena.h": "c"
+        "arena.h": "c",
+        "connector.edl.h": "c"
     }
 }

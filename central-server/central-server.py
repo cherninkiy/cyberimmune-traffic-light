@@ -43,15 +43,15 @@ def process_kos():
     global tl_mode
     tl_mode = data
 
-    result ={"result": "success", "event": "mode changed"}
+    result ={"result": "success", "event": "mode changed", "data": data}
     return dumps(result)
 
 
 @post('/diagnostics')
-def process_kos():
-    tl_data = request.json
-    print(f'Received diagnostics:\n{tl_data}\n')
-    result ={"result": "success", "event": "diagnostics received"}
+def process_diagnostics():
+    data = request.json
+    print(f'Received diagnostics:\n{data}\n')
+    result ={"result": "success", "event": "diagnostics received", "data": data}
     return dumps(result)
 
 
