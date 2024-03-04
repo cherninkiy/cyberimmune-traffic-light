@@ -24,7 +24,7 @@ use EDL kl.drivers.GPIO
 use EDL Einit
 
 use EDL traffic_light.ControlSystem
-use EDL traffic_light.CrossChecker
+use EDL traffic_light.CrossController
 use EDL traffic_light.LightsGPIO
 use EDL traffic_light.Diagnostics
 use EDL traffic_light.Connector
@@ -83,7 +83,7 @@ request {
     match dst=kl.core.Core {
         match src=Einit { grant() }
         match src=traffic_light.ControlSystem { grant() }
-        match src=traffic_light.CrossChecker { grant() }
+        match src=traffic_light.CrossController { grant() }
         match src=traffic_light.LightsGPIO { grant() }
         match src=traffic_light.Diagnostics { grant() }
         match src=traffic_light.Connector { grant() }
@@ -117,7 +117,7 @@ request {
     match src = kl.VfsRamFs, dst = kl.drivers.RAMDisk     { grant () }
 }
 
-// Request messages: ControlSystem -> CrossChecker
+// Request messages: ControlSystem -> CrossController
 request src=traffic_light.ControlSystem 
         dst=traffic_light.Connector 
         endpoint=trafficMode.trafficMode 
@@ -125,17 +125,17 @@ request src=traffic_light.ControlSystem
     grant()
 }
 
-// Request messages: ControlSystem -> CrossChecker
+// Request messages: ControlSystem -> CrossController
 request src=traffic_light.ControlSystem 
-        dst=traffic_light.CrossChecker 
-        endpoint=crossMode.crossMode 
-        method=SetCrossMode {
+        dst=traffic_light.CrossController 
+        endpoint=crossController.crossControl
+        method=SetCrossSchedule {
 
     grant()
 }
 
-// Request messages: CrossChecker -> LightsGPIO
-request src=traffic_light.CrossChecker 
+// Request messages: CrossController -> LightsGPIO
+request src=traffic_light.CrossController 
         dst=traffic_light.LightsGPIO 
         endpoint=lightsGpio.lightsGpio 
         method=SetCrossLights {
@@ -217,7 +217,7 @@ request dst=traffic_light.Diagnostics
         endpoint=eventLog.eventLog 
         method=Collect {
 
-    match src=traffic_light.CrossChecker { grant () }
+    match src=traffic_light.CrossController { grant () }
     match src=traffic_light.LightsGPIO { grant () }
     match src=traffic_light.ControlSystem { grant () }
     match src=traffic_light.Connector { grant () }

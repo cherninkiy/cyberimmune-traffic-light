@@ -48,20 +48,20 @@ static nk_err_t SetCrossLights_impl(struct ILightsGpio *self,
     ILightsGpioImpl *impl = (ILightsGpioImpl *)self;
 
     // Current mode
-    nk_uint32_t curCrossMode = impl->mode;
-    const nk_char_t *curWayMode1 = GetConsoleColor(curCrossMode & 0xFF);
-    const nk_char_t *curWayMode2 = GetConsoleColor((curCrossMode >> 8) & 0xFF);
+    nk_uint32_t curCrossController = impl->mode;
+    const nk_char_t *curWayMode1 = GetConsoleColor(curCrossController & 0xFF);
+    const nk_char_t *curWayMode2 = GetConsoleColor((curCrossController >> 8) & 0xFF);
 
     // Requested mode
-    nk_uint32_t reqCrossMode = req->lights.crossMode;
-    const nk_char_t *reqWayMode1 = GetConsoleColor(reqCrossMode & 0xFF);
-    const nk_char_t *reqWayMode2 = GetConsoleColor((reqCrossMode >> 8) & 0xFF);
+    nk_uint32_t reqCrossController = req->lights.crossMode;
+    const nk_char_t *reqWayMode1 = GetConsoleColor(reqCrossController & 0xFF);
+    const nk_char_t *reqWayMode2 = GetConsoleColor((reqCrossController >> 8) & 0xFF);
 
-    fprintf(stderr, "%-13s [DEBUG] Request SetCrossLights: \n"
+    fprintf(stderr, "%-16s [DEBUG] Request SetCrossLights: \n"
                     "current={\"mode\": 0x%08x, \"lights\": [\"%s\", \"%s\"]}\n"
                     "request={\"mode\": 0x%08x, \"lights\": [\"%s\", \"%s\"]}\n",
-                    EntityName, curCrossMode, curWayMode1, curWayMode2,
-                                reqCrossMode, reqWayMode1, reqWayMode2);
+                    EntityName, curCrossController, curWayMode1, curWayMode2,
+                                reqCrossController, reqWayMode1, reqWayMode2);
 
     // Some GPIO-related code
     // ......................
@@ -93,7 +93,7 @@ static struct ILightsGpio *CreateILightsGpioImpl() {
 
     const nk_char_t *wayMode1 = GetConsoleColor(impl.mode & 0xFF);
     const nk_char_t *wayMode2 = GetConsoleColor((impl.mode >> 8) & 0xFF);
-    fprintf(stderr, "%-13s [DEBUG] Entity initialized: "
+    fprintf(stderr, "%-16s [DEBUG] Entity initialized: "
                     "state={\"mode\": 0x%08x, \"lights\": [\"%s\", \"%s\"]}\n",
                     EntityName, impl.mode, wayMode1, wayMode2);
 
@@ -144,21 +144,21 @@ int main(void) {
         // Wait for request
         err = nk_transport_recv(&transport.base, &req.base_, &reqArena);
         if (NK_EOK != err) {
-            fprintf(stderr, "%-13s [ERROR] nk_transport_recv: err=%d\n", EntityName, err);
+            fprintf(stderr, "%-16s [ERROR] nk_transport_recv: err=%d\n", EntityName, err);
             continue;
         }
 
         // Dispath request
         err = LightsGPIO_entity_dispatch(&entity, &req.base_, &reqArena, &res.base_, &resArena);
         if (NK_EOK != err) {
-            fprintf(stderr, "%-13s [ERROR] LightsGPIO_entity_dispatch: err=%d\n", EntityName, err);
+            fprintf(stderr, "%-16s [ERROR] LightsGPIO_entity_dispatch: err=%d\n", EntityName, err);
             continue;
         }
 
         // Send response
         err = nk_transport_reply(&transport.base, &res.base_, &resArena);
         if (NK_EOK != err) {
-            fprintf(stderr, "%-13s [ERROR] nk_transport_reply: err=%d\n", EntityName, err);
+            fprintf(stderr, "%-16s [ERROR] nk_transport_reply: err=%d\n", EntityName, err);
             continue;
         }
 

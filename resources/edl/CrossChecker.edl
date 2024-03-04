@@ -1,5 +1,0 @@
-entity traffic_light.CrossChecker
-
-components {
-    crossMode : traffic_light.CrossMode
-}

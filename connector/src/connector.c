@@ -52,11 +52,11 @@ int get_traffic_light_configuration(traffic_light_mode *mode) {
     // socket create and verification
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
-        fprintf(stderr, "%-13s [ERROR] Socket creation failed!\n", EntityName);
+        fprintf(stderr, "%-16s [ERROR] Socket creation failed!\n", EntityName);
         return EXIT_FAILURE;
     }
     else {
-        // fprintf(stderr, "%-13s [DEBUG] Socket successfully created\n", EntityName);
+        // fprintf(stderr, "%-16s [DEBUG] Socket successfully created\n", EntityName);
     }
     bzero(&servaddr, sizeof(servaddr));
 
@@ -65,7 +65,7 @@ int get_traffic_light_configuration(traffic_light_mode *mode) {
     servaddr.sin_addr.s_addr = inet_addr(HOST_IP);
 
     if ( servaddr.sin_addr.s_addr == INADDR_NONE ) {
-        fprintf(stderr, "%-13s [ERROR] Bad network address\n", EntityName);
+        fprintf(stderr, "%-16s [ERROR] Bad network address\n", EntityName);
     }
 
     servaddr.sin_port = htons(HOST_PORT);
@@ -79,10 +79,10 @@ int get_traffic_light_configuration(traffic_light_mode *mode) {
 
     // connect the client socket to server socket
     if (res != 0) {
-        fprintf(stderr, "%-13s [ERROR] Connection not established: error=%d\n", EntityName, res);
+        fprintf(stderr, "%-16s [ERROR] Connection not established: error=%d\n", EntityName, res);
     }
     else {
-        // fprintf(stderr, "%-13s [DEBUG] Connection established\n", EntityName);
+        // fprintf(stderr, "%-16s [DEBUG] Connection established\n", EntityName);
 
     }
 
@@ -134,11 +134,11 @@ int send_self_diagnostics(sys_health_data *diagnostic_data) {
     // socket create and verification
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
-        fprintf(stderr, "%-13s [ERROR] Socket creation failed!\n", EntityName);
+        fprintf(stderr, "%-16s [ERROR] Socket creation failed!\n", EntityName);
         return EXIT_FAILURE;
     }
     else {
-        // fprintf(stderr, "%-13s [DEBUG] Socket successfully created\n", EntityName);
+        // fprintf(stderr, "%-16s [DEBUG] Socket successfully created\n", EntityName);
     }
     bzero(&servaddr, sizeof(servaddr));
 
@@ -147,7 +147,7 @@ int send_self_diagnostics(sys_health_data *diagnostic_data) {
     servaddr.sin_addr.s_addr = inet_addr(HOST_IP);
 
     if ( servaddr.sin_addr.s_addr == INADDR_NONE ) {
-        fprintf(stderr, "%-13s [ERROR] Bad network address\n", EntityName);
+        fprintf(stderr, "%-16s [ERROR] Bad network address\n", EntityName);
     }
 
     servaddr.sin_port = htons(HOST_PORT);
@@ -161,10 +161,10 @@ int send_self_diagnostics(sys_health_data *diagnostic_data) {
 
     // connect the client socket to server socket
     if (res != 0) {
-        fprintf(stderr, "%-13s [ERROR] Connection not established: error=%d\n", EntityName, res);
+        fprintf(stderr, "%-16s [ERROR] Connection not established: error=%d\n", EntityName, res);
     }
     else {
-        // fprintf(stderr, "%-13s [DEBUG] Connection established\n", EntityName);
+        // fprintf(stderr, "%-16s [DEBUG] Connection established\n", EntityName);
 
     }
 
@@ -182,7 +182,7 @@ int send_self_diagnostics(sys_health_data *diagnostic_data) {
         "{"
         "    \"ControlSystem\": %d," 
         "    \"Connector\": %d,"
-        "    \"CrossChecker\": %d,"
+        "    \"CrossController\": %d,"
         "    \"LightsGPIO\": %d,"
         "    \"LightsDiagnostics\": %d"
         "}",
@@ -238,7 +238,7 @@ static nk_err_t GetTrafficMode_impl(struct ITrafficMode *self,
 
     traffic_light_mode mode;
     int rc = get_traffic_light_configuration(&mode);
-    fprintf(stderr, "%-13s [DEBUG] Сonfiguration parsing status: %s\n", EntityName, rc == EXIT_SUCCESS ? "OK" : "FAILED");
+    fprintf(stderr, "%-16s [DEBUG] Сonfiguration parsing status: %s\n", EntityName, rc == EXIT_SUCCESS ? "OK" : "FAILED");
 
     NkKosCopyStringToArena(res_arena, &res->mode.mode, mode.mode);
     res->mode.duration1 = mode.direction_1_duration;
@@ -270,7 +270,7 @@ static struct ITrafficMode *CreateITrafficModeImpl()
 
     EventLogProxy_Init(&impl.logProxy);
 
-    // fprintf(stderr, "%-13s [DEBUG] Entity initialized: state={\"direction\": %s, \"mode\": \"%s\"}\n",
+    // fprintf(stderr, "%-16s [DEBUG] Entity initialized: state={\"direction\": %s, \"mode\": \"%s\"}\n",
     //                 EntityName, impl.direction, impl.mode);
 
     LogEvent(&impl.logProxy, 0, EntityName, "\"Hello I'm Connector!\"");
@@ -326,21 +326,21 @@ int main(int argc, char** argv)
         // Wait for request
         err = nk_transport_recv(&transport.base, &req.base_, &reqArena);
         if (NK_EOK != err) {
-            fprintf(stderr, "%-13s [ERROR] nk_transport_recv: err=%d\n", EntityName, err);
+            fprintf(stderr, "%-16s [ERROR] nk_transport_recv: err=%d\n", EntityName, err);
             // continue;
         }
 
         // Dispath request
         err = Connector_entity_dispatch(&entity, &req.base_, &reqArena, &res.base_, &resArena);
         if (NK_EOK != err) {
-            fprintf(stderr, "%-13s [ERROR] LightsGPIO_entity_dispatch: err=%d\n", EntityName, err);
+            fprintf(stderr, "%-16s [ERROR] LightsGPIO_entity_dispatch: err=%d\n", EntityName, err);
             // continue;
         }
 
         // Send response
         err = nk_transport_reply(&transport.base, &res.base_, &resArena);
         if (NK_EOK != err) {
-            fprintf(stderr, "%-13s [ERROR] nk_transport_reply: err=%d\n", EntityName, err);
+            fprintf(stderr, "%-16s [ERROR] nk_transport_reply: err=%d\n", EntityName, err);
             // continue;
         }
     } while (true);
@@ -351,13 +351,13 @@ int main(int argc, char** argv)
 /* Connector entity entry point. */
 int main_test(int argc, const char *argv[]) {
 
-    // fprintf(stderr, "%-13s [DEBUG] Entity initialized: state={\"mode\": 0x%08x, \"lights\": [\"%s\", \"%s\"]}\n",
+    // fprintf(stderr, "%-16s [DEBUG] Entity initialized: state={\"mode\": 0x%08x, \"lights\": [\"%s\", \"%s\"]}\n",
     //                 EntityName, impl.mode, gpio1Color, gpio2Color);
-    // fprintf(stderr, "%-13s [DEBUG] Hello, I'm about to start working\n", EntityName);
+    // fprintf(stderr, "%-16s [DEBUG] Hello, I'm about to start working\n", EntityName);
 
     // bool is_network_available;
     // is_network_available = wait_for_network();
-    // fprintf(stderr, "%-13s [DEBUG] Network status: %s\n", EntityName, is_network_available ? "UP" : "DOWN");
+    // fprintf(stderr, "%-16s [DEBUG] Network status: %s\n", EntityName, is_network_available ? "UP" : "DOWN");
 
 
     // // Diagnostics
@@ -368,7 +368,7 @@ int main_test(int argc, const char *argv[]) {
     // do {
     
     //     int rc = get_traffic_light_configuration();    
-    //     fprintf(stderr, "%-13s Сonfiguration parsing status: %s\n", EntityName, rc == EXIT_SUCCESS ? "OK" : "FAILED");
+    //     fprintf(stderr, "%-16s Сonfiguration parsing status: %s\n", EntityName, rc == EXIT_SUCCESS ? "OK" : "FAILED");
     // //     LogEvent(&logProxy, 0, EntityName, "\"Hello I'm Connector!\"");
     //     KosThreadSleep(1000);
     // } while (true);

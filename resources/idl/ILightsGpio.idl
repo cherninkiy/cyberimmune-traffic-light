@@ -16,6 +16,18 @@ const UInt32 Direction2Yellow = 0x00000200;
 const UInt32 Direction2Green  = 0x00000400;
 const UInt32 Direction2Blink  = 0x00000800;
 
+// Regulated cross modes
+const UInt32 Regulated1Green2Red        = 0x00000104;
+const UInt32 Regulated1BlinkGreen2Red   = 0x0000010C;
+const UInt32 Regulated1Yellow2RedYellow = 0x00000302;
+const UInt32 Regulated1Red2Green        = 0x00000401;
+const UInt32 Regulated1Red2BlinkGreen   = 0x00000C01;
+const UInt32 Regulated1RedYellow2Yellow = 0x00000203;
+
+// Unregulated cross mode
+const UInt32 Unregulated1BlinkYellow2BlinkYellow = 0x00000A0A;
+
+
 const UInt32 MaxLength = 16;
 
 // Color name or blinking color or their combination.

@@ -8,6 +8,8 @@
 #include <coresrv/sl/sl_api.h>
 #include <kos/thread.h>
 #include <nk/arena.h>
+#include <nk/types.h>
+#include <nk/errno.h>
 
 #define NK_USE_UNQUALIFIED_NAMES
 
@@ -15,13 +17,13 @@
 #include <traffic_light/ITrafficMode.idl.h>
 #include "response-parser.h"
 
-// ICrossMode Client
-#include "color_defs.h"
-#include "crossmode_proxy.h"
+// ICrossControl Client
+#include <traffic_light/ICrossControl.idl.h>
 
 // IEventLog Client
 #include "eventlog_proxy.h"
 
+#include "color_defs.h"
 #include "response-parser.h"
 
 static const char EntityName[] = "ControlSystem";
@@ -54,53 +56,72 @@ nk_err_t TrafficModeProxy_GetTrafficMode(TrafficModeProxy *client, TrafficModeDa
 
 nk_err_t TrafficModeProxy_SendDiagnostics(TrafficModeProxy *client, sys_health_data *sysHealthData);
 
-void SelfDiagnostic(EventLogProxy *client, sys_health_data *sysHealthData);
 
+typedef struct CrossControlProxy {
+    // TODO: Exclude if proxy releases all resources
+    NkKosTransport transport;
+    // TODO: Exclude if proxy releases all resources
+    Handle channel;
+
+    ICrossControl_proxy proxy;
+} CrossControlProxy;
+
+
+int CrossControlProxy_Init(CrossControlProxy *client, const char *channelName, const char *interfaceName);
+
+nk_err_t CrossControlProxy_SetCrossSchedule(CrossControlProxy *client, TrafficModeData *schedule, nk_uint32_t *duration);
+
+void SelfDiagnostic(EventLogProxy *client, sys_health_data *sysHealthData);
 
 int main(int argc, char** argv) {
     TrafficModeProxy trafficModeProxy;
     TrafficModeProxy_Init(&trafficModeProxy, "trafficmode_channel", "trafficMode.trafficMode");
 
-    CrossModeProxy crossModeProxy;
-    CrossModeProxy_Init(&crossModeProxy, "crossmode_channel", "crossMode.crossMode");
+    CrossControlProxy crossModeProxy;
+    CrossControlProxy_Init(&crossModeProxy, "crosscontrol_channel", "crossController.crossControl");
 
     EventLogProxy eventLogProxy;
     EventLogProxy_Init(&eventLogProxy);
     LogEvent(&eventLogProxy, 0, EntityName, "\"Hello I'm ControlSystem!\"");
 
+    nk_uint32_t duration = 1;
     TrafficModeData trafficMode;
     sys_health_data sysHealthData;
     do {
         SelfDiagnostic(&eventLogProxy, &sysHealthData);
-        fprintf(stderr, "%-13s [DEBUG] Self Diagnostic Data: %d\n", EntityName, sysHealthData.controlSystem);
+        fprintf(stderr, "%-16s [DEBUG] Self Diagnostic Data: %d\n", EntityName, sysHealthData.controlSystem);
 
         TrafficModeProxy_GetTrafficMode(&trafficModeProxy, &trafficMode);
 
         nk_err_t err = NK_EOK;
         if (nk_strcmp(trafficMode.mode, "unregulated") == 0) {
-            nk_uint32_t unregulatedMode = ICrossMode_Direction1Yellow 
-                                        | ICrossMode_Direction1Blink
-                                        | ICrossMode_Direction2Yellow
-                                        | ICrossMode_Direction2Blink;
-            err = CrossModeProxy_SetCrossMode(&crossModeProxy, unregulatedMode);
+            nk_uint32_t unregulatedMode = ICrossControl_Direction1Yellow 
+                                        | ICrossControl_Direction1Blink
+                                        | ICrossControl_Direction2Yellow
+                                        | ICrossControl_Direction2Blink;
+            err = CrossControlProxy_SetCrossSchedule(&crossModeProxy, &trafficMode, &duration);
         }
         
         if (nk_strcmp(trafficMode.mode, "regulated") == 0) {
-            err = CrossModeProxy_SetCrossMode(&crossModeProxy, 0x0C0C);
+            // err = CrossControlProxy_SetCrossSchedule(&crossModeProxy, 0x0C0C);
+            err = CrossControlProxy_SetCrossSchedule(&crossModeProxy, &trafficMode, &duration);
         }
 
         if (nk_strcmp(trafficMode.mode, "manual") == 0) {
-            nk_uint32_t direction1 = GetColorMode(trafficMode.color1);
-            nk_uint32_t direction2 = GetColorMode(trafficMode.color2);
-            err = CrossModeProxy_SetCrossMode(&crossModeProxy, (direction1 << 8) | direction2);
+            // nk_uint32_t direction1 = GetColorMode(trafficMode.color1);
+            // nk_uint32_t direction2 = GetColorMode(trafficMode.color2);
+            // err = CrossControllerProxy_SetCrossController(&crossModeProxy, (direction1 << 8) | direction2);
+            err = CrossControlProxy_SetCrossSchedule(&crossModeProxy, &trafficMode, &duration);
         }
 
         if (err != NK_EOK) {
-            fprintf(stderr, "\x1B[31m%-13s [ERROR] SetCrossMode failed: req={\"mode\": \"%s\", \"color1\": \"%s\", \"color2\"=\"%s\"}, err={code: %d, \"message\": \"%s\"}\x1B[0m\n",
+            fprintf(stderr, "\x1B[31m%-16s [ERROR] SetCrossController failed: req={\"mode\": \"%s\", \"color1\": \"%s\", \"color2\"=\"%s\"}, err={code: %d, \"message\": \"%s\"}\x1B[0m\n",
                             EntityName, trafficMode.mode, trafficMode.color1, trafficMode.color2, err, GetErrMessage(err));
         }
 
-        KosThreadSleep(1000);
+        for (int i = 0; i < duration; ++i) {
+            KosThreadSleep(1000);
+        }
     } while (true);
 
     return EXIT_SUCCESS;
@@ -202,7 +223,66 @@ void SelfDiagnostic(EventLogProxy *client, sys_health_data *sysHealthData) {
 
     sysHealthData->controlSystem = res.state.controlSystem;
     sysHealthData->connector = res.state.connector;
-    sysHealthData->crossChecker = res.state.crossChecker;
+    sysHealthData->crossChecker = res.state.crossController;
     sysHealthData->lightsGPIO = res.state.lightsGpio;
     sysHealthData->diagnostics = err;
+}
+
+
+int CrossControlProxy_Init(CrossControlProxy *client, const char *channelName, const char *interfaceName) {
+    /**
+     * Get the IPC handle of the connection named
+     * "lights_gpio_connection".
+     */
+    client->channel = ServiceLocatorConnect(channelName);
+    assert(client->channel != INVALID_HANDLE);
+
+    /* Initialize IPC transport for interaction with the entities. */
+    NkKosTransport_Init(&client->transport, client->channel, NK_NULL, 0);
+
+    /**
+     * Get Runtime Interface ID (RIID) for interface traffic_light.Mode.mode.
+     * Here mode is the name of the traffic_light.Mode component instance,
+     * traffic_light.Mode.mode is the name of the Mode interface implementation.
+     */
+    nk_iid_t riid = ServiceLocatorGetRiid(client->channel, interfaceName);
+    assert(riid != INVALID_RIID);
+
+    /**
+     * Initialize proxy object by specifying transport (&transport)
+     * and lights gpio interface identifier (riid). Each method of the
+     * proxy object will be implemented by sending a request to the lights gpio.
+     */
+    ICrossControl_proxy_init(&client->proxy, &client->transport.base, riid);
+
+    return 0;
+}
+
+nk_err_t CrossControlProxy_SetCrossSchedule(CrossControlProxy *client, TrafficModeData *schedule, nk_uint32_t *duration) {
+    // Request's transport structures
+    ICrossControl_SetCrossSchedule_req req;
+    char reqBuffer[ICrossControl_req_arena_size];
+    nk_arena reqArena = NK_ARENA_INITIALIZER(reqBuffer, reqBuffer + ICrossControl_req_arena_size);
+
+    // Response's transport structures
+    ICrossControl_SetCrossSchedule_res res;
+    char resBuffer[ICrossControl_res_arena_size];
+    nk_arena resArena = NK_ARENA_INITIALIZER(resBuffer, resBuffer + ICrossControl_res_arena_size);
+
+    // Fill request data
+    NkKosCopyStringToArena(&reqArena, &req.schedule.behavior, schedule->mode);
+    req.schedule.way1Duration = schedule->duration1;
+    NkKosCopyStringToArena(&reqArena, &req.schedule.way1Mode, schedule->color1);
+    req.schedule.way2Duration = schedule->duration2;
+    NkKosCopyStringToArena(&reqArena, &req.schedule.way2Mode, schedule->color2);
+
+    // Call dispatcher interface
+    nk_err_t err = ICrossControl_SetCrossSchedule(&client->proxy.base, &req, &reqArena, &res, &resArena);
+    if (NK_EOK != err) {
+        *duration = res.result;
+    } else {
+        *duration = 0;
+    }
+
+    return NK_EOK;
 }

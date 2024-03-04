@@ -74,8 +74,8 @@ include_directories ( include json-parser )
 nk_build_idl_files (traffic_light_idl_files NK_MODULE "traffic_light" IDL "${RESOURCES}/idl/ILightsGpio.idl")
 nk_build_cdl_files (traffic_light_cdl_files IDL_TARGET traffic_light_idl_files NK_MODULE "traffic_light" CDL "${RESOURCES}/cdl/LightsGpio.cdl")
 
-nk_build_idl_files (traffic_light_idl_files NK_MODULE "traffic_light" IDL "${RESOURCES}/idl/ICrossMode.idl")
-nk_build_cdl_files (traffic_light_cdl_files IDL_TARGET traffic_light_idl_files NK_MODULE "traffic_light" CDL "${RESOURCES}/cdl/CrossMode.cdl")
+nk_build_idl_files (traffic_light_idl_files NK_MODULE "traffic_light" IDL "${RESOURCES}/idl/ICrossControl.idl")
+nk_build_cdl_files (traffic_light_cdl_files IDL_TARGET traffic_light_idl_files NK_MODULE "traffic_light" CDL "${RESOURCES}/cdl/CrossControl.cdl")
 
 nk_build_idl_files (traffic_light_idl_files NK_MODULE "traffic_light" IDL "${RESOURCES}/idl/IEventLog.idl")
 nk_build_cdl_files (traffic_light_cdl_files IDL_TARGET traffic_light_idl_files NK_MODULE "traffic_light" CDL "${RESOURCES}/cdl/EventLog.cdl")
@@ -83,14 +83,14 @@ nk_build_cdl_files (traffic_light_cdl_files IDL_TARGET traffic_light_idl_files N
 nk_build_idl_files (traffic_light_idl_files NK_MODULE "traffic_light" IDL "${RESOURCES}/idl/ITrafficMode.idl")
 nk_build_cdl_files (traffic_light_cdl_files IDL_TARGET traffic_light_idl_files NK_MODULE "traffic_light" CDL "${RESOURCES}/cdl/TrafficMode.cdl")
 
-nk_build_edl_files (traffic_light_cross_checker_edl_files CDL_TARGET traffic_light_cdl_files NK_MODULE "traffic_light" EDL "${RESOURCES}/edl/CrossChecker.edl")
+nk_build_edl_files (traffic_light_cross_controller_edl_files CDL_TARGET traffic_light_cdl_files NK_MODULE "traffic_light" EDL "${RESOURCES}/edl/CrossController.edl")
 nk_build_edl_files (traffic_light_diagnostics_edl_files CDL_TARGET traffic_light_cdl_files NK_MODULE "traffic_light" EDL "${RESOURCES}/edl/Diagnostics.edl")
 nk_build_edl_files (traffic_light_lights_gpio_edl_files CDL_TARGET traffic_light_cdl_files NK_MODULE "traffic_light" EDL "${RESOURCES}/edl/LightsGPIO.edl")
 nk_build_edl_files (traffic_light_control_system_edl_files CDL_TARGET traffic_light_cdl_files NK_MODULE "traffic_light" EDL "${RESOURCES}/edl/ControlSystem.edl")
 nk_build_edl_files (traffic_light_connector_edl_files CDL_TARGET traffic_light_cdl_files NK_MODULE "traffic_light" EDL "${RESOURCES}/edl/Connector.edl")
 
 add_subdirectory (control_system)
-add_subdirectory (cross_checker)
+add_subdirectory (cross_controller)
 add_subdirectory (diagnostics)
 add_subdirectory (lights_gpio)
 add_subdirectory (connector)

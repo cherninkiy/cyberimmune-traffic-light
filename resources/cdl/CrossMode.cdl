@@ -1,8 +1,0 @@
-/* Definition of the `CrossMode` component. */
-
-component traffic_light.CrossMode
-
-endpoints {
-    /* Declaration of a named implementation of the "CrossMode" interface. */
-    crossMode : traffic_light.ICrossMode
-}

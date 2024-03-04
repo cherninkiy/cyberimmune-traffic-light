@@ -10,7 +10,7 @@
 
 #define NK_USE_UNQUALIFIED_NAMES
 
-// ICrossMode Client
+// ICrossController Client
 #include "color_defs.h"
 #include "crossmode_proxy.h"
 // IEventLog Client
@@ -28,68 +28,68 @@ int main_test(int argc, const char *argv[])
     static const nk_uint32_t tl_modes[MODES_NUM] = {
 
         // 1. UNREGULATED ["blink-yellow", "blink-yellow"]
-        ICrossMode_Direction1Blink | ICrossMode_Direction1Yellow | ICrossMode_Direction2Blink | ICrossMode_Direction2Yellow,
+        ICrossController_Direction1Blink | ICrossController_Direction1Yellow | ICrossController_Direction2Blink | ICrossController_Direction2Yellow,
 
         // 3 (+2). Switch to REGULAR, priotiry to direction 1
         // ["blink-yellow", "blink-yellow"] -> ["red-yellow", "yellow"] -> ["green", "red"]
-        // ICrossMode_Direction1Red | ICrossMode_Direction1Yellow   | ICrossMode_Direction2Yellow,
-        ICrossMode_Direction1Green                               | ICrossMode_Direction2Red,
-        ICrossMode_Direction1Green                               | ICrossMode_Direction2Red,
+        // ICrossController_Direction1Red | ICrossController_Direction1Yellow   | ICrossController_Direction2Yellow,
+        ICrossController_Direction1Green                               | ICrossController_Direction2Red,
+        ICrossController_Direction1Green                               | ICrossController_Direction2Red,
 
         // 8 (+5). Full cycle on direction 1, direction 2 is "red"
         // "green" -> "blink-green" -> "yellow" -> "red-yellow" -> "green"
-        ICrossMode_Direction1Blink | ICrossMode_Direction1Green  | ICrossMode_Direction2Red,
-        ICrossMode_Direction1Yellow                              | ICrossMode_Direction2Red,
-        ICrossMode_Direction1Red                                 | ICrossMode_Direction2Red,
-        ICrossMode_Direction1Red | ICrossMode_Direction1Yellow   | ICrossMode_Direction2Red,
-        ICrossMode_Direction1Green                               | ICrossMode_Direction2Red,
+        ICrossController_Direction1Blink | ICrossController_Direction1Green  | ICrossController_Direction2Red,
+        ICrossController_Direction1Yellow                              | ICrossController_Direction2Red,
+        ICrossController_Direction1Red                                 | ICrossController_Direction2Red,
+        ICrossController_Direction1Red | ICrossController_Direction1Yellow   | ICrossController_Direction2Red,
+        ICrossController_Direction1Green                               | ICrossController_Direction2Red,
 
         // 11 (+3). Switch to UNREGULATED
         // ["blink-green", "red"] -> ["yellow", "red-yellow"] -> ["blink-yellow", "blink-yellow"]
-        // ICrossMode_Direction1Blink | ICrossMode_Direction1Green  | ICrossMode_Direction2Red,
-        // ICrossMode_Direction1Yellow                              | ICrossMode_Direction2Red | ICrossMode_Direction2Yellow,
-        ICrossMode_Direction1Green                               | ICrossMode_Direction2Red,
-        ICrossMode_Direction1Blink | ICrossMode_Direction1Yellow | ICrossMode_Direction2Blink | ICrossMode_Direction2Yellow,
-        ICrossMode_Direction1Blink | ICrossMode_Direction1Yellow | ICrossMode_Direction2Blink | ICrossMode_Direction2Yellow,
+        // ICrossController_Direction1Blink | ICrossController_Direction1Green  | ICrossController_Direction2Red,
+        // ICrossController_Direction1Yellow                              | ICrossController_Direction2Red | ICrossController_Direction2Yellow,
+        ICrossController_Direction1Green                               | ICrossController_Direction2Red,
+        ICrossController_Direction1Blink | ICrossController_Direction1Yellow | ICrossController_Direction2Blink | ICrossController_Direction2Yellow,
+        ICrossController_Direction1Blink | ICrossController_Direction1Yellow | ICrossController_Direction2Blink | ICrossController_Direction2Yellow,
 
         // 13 (+2). Switch to REGULAR, priotiry to direction 2
         // ["blink-yellow", "blink-yellow"] -> ["yellow", "red-yellow"] -> ["red", "green"]
-        // ICrossMode_Direction2Red | ICrossMode_Direction2Yellow   | ICrossMode_Direction1Yellow,
-        ICrossMode_Direction2Green                               | ICrossMode_Direction1Red,
-        ICrossMode_Direction2Green                               | ICrossMode_Direction1Red,
+        // ICrossController_Direction2Red | ICrossController_Direction2Yellow   | ICrossController_Direction1Yellow,
+        ICrossController_Direction2Green                               | ICrossController_Direction1Red,
+        ICrossController_Direction2Green                               | ICrossController_Direction1Red,
 
         // 18 (+5). Full cycle on direction 2, direction 1 is "red"
         // "green" -> "blink-green" -> "yellow" -> "red-yellow" -> "green"
-        ICrossMode_Direction2Blink | ICrossMode_Direction2Green  | ICrossMode_Direction1Red,
-        ICrossMode_Direction2Yellow                              | ICrossMode_Direction1Red,
-        ICrossMode_Direction2Red                                 | ICrossMode_Direction1Red,
-        ICrossMode_Direction2Red | ICrossMode_Direction2Yellow   | ICrossMode_Direction1Red,
-        ICrossMode_Direction2Green                               | ICrossMode_Direction1Red,
+        ICrossController_Direction2Blink | ICrossController_Direction2Green  | ICrossController_Direction1Red,
+        ICrossController_Direction2Yellow                              | ICrossController_Direction1Red,
+        ICrossController_Direction2Red                                 | ICrossController_Direction1Red,
+        ICrossController_Direction2Red | ICrossController_Direction2Yellow   | ICrossController_Direction1Red,
+        ICrossController_Direction2Green                               | ICrossController_Direction1Red,
 
         // 21. Switch to UNREGULATED
         // ["blink-green", "red"] -> ["yellow", "red-yellow"] -> ["blink-yellow", "blink-yellow"]
-        // ICrossMode_Direction2Blink | ICrossMode_Direction2Green  | ICrossMode_Direction1Red,
-        // ICrossMode_Direction2Yellow                              | ICrossMode_Direction1Red | ICrossMode_Direction1Yellow,
-        ICrossMode_Direction2Green                               | ICrossMode_Direction1Red,
-        ICrossMode_Direction2Blink | ICrossMode_Direction2Yellow | ICrossMode_Direction1Blink | ICrossMode_Direction1Yellow,
-        ICrossMode_Direction2Blink | ICrossMode_Direction2Yellow | ICrossMode_Direction1Blink | ICrossMode_Direction1Yellow,
+        // ICrossController_Direction2Blink | ICrossController_Direction2Green  | ICrossController_Direction1Red,
+        // ICrossController_Direction2Yellow                              | ICrossController_Direction1Red | ICrossController_Direction1Yellow,
+        ICrossController_Direction2Green                               | ICrossController_Direction1Red,
+        ICrossController_Direction2Blink | ICrossController_Direction2Yellow | ICrossController_Direction1Blink | ICrossController_Direction1Yellow,
+        ICrossController_Direction2Blink | ICrossController_Direction2Yellow | ICrossController_Direction1Blink | ICrossController_Direction1Yellow,
 
         // 27... Other
-        ICrossMode_Direction1Red | ICrossMode_Direction2Red,
-        ICrossMode_Direction1Red | ICrossMode_Direction2Red | ICrossMode_Direction2Yellow,
-        ICrossMode_Direction1Red | ICrossMode_Direction2Green,
-        ICrossMode_Direction1Red | ICrossMode_Direction2Blink | ICrossMode_Direction2Green,
-        ICrossMode_Direction1Red | ICrossMode_Direction2Yellow,
-        ICrossMode_Direction1Red | ICrossMode_Direction2Red,
+        ICrossController_Direction1Red | ICrossController_Direction2Red,
+        ICrossController_Direction1Red | ICrossController_Direction2Red | ICrossController_Direction2Yellow,
+        ICrossController_Direction1Red | ICrossController_Direction2Green,
+        ICrossController_Direction1Red | ICrossController_Direction2Blink | ICrossController_Direction2Green,
+        ICrossController_Direction1Red | ICrossController_Direction2Yellow,
+        ICrossController_Direction1Red | ICrossController_Direction2Red,
 
-        // ICrossMode_Direction1Red    + ICrossMode_Direction1Yellow + ICrossMode_Direction2Red,
-        // ICrossMode_Direction1Green  + ICrossMode_Direction2Red,
-        // ICrossMode_Direction1Yellow + ICrossMode_Direction2Red,
-        // ICrossMode_Direction1Red    + ICrossMode_Direction2Yellow + ICrossMode_Direction2Red,
-        // ICrossMode_Direction1Red    + ICrossMode_Direction2Green,
-        // ICrossMode_Direction1Red    + ICrossMode_Direction2Yellow,
-        // ICrossMode_Direction1Yellow + ICrossMode_Direction1Blink  + ICrossMode_Direction2Yellow + ICrossMode_Direction2Blink,
-        // ICrossMode_Direction1Green  + ICrossMode_Direction2Green // <-- try to forbid this via security policies
+        // ICrossController_Direction1Red    + ICrossController_Direction1Yellow + ICrossController_Direction2Red,
+        // ICrossController_Direction1Green  + ICrossController_Direction2Red,
+        // ICrossController_Direction1Yellow + ICrossController_Direction2Red,
+        // ICrossController_Direction1Red    + ICrossController_Direction2Yellow + ICrossController_Direction2Red,
+        // ICrossController_Direction1Red    + ICrossController_Direction2Green,
+        // ICrossController_Direction1Red    + ICrossController_Direction2Yellow,
+        // ICrossController_Direction1Yellow + ICrossController_Direction1Blink  + ICrossController_Direction2Yellow + ICrossController_Direction2Blink,
+        // ICrossController_Direction1Green  + ICrossController_Direction2Green // <-- try to forbid this via security policies
     };
 
     static const nk_uint32_t tl_combinations[10] = {
@@ -98,19 +98,19 @@ int main_test(int argc, const char *argv[])
     //   y      yg           ygb                 g     gb           b
          0x02, 0x02 | 0x04, 0x02 | 0x04 | 0x08, 0x04, 0x04 | 0x08, 0x08 };
 
-    CrossModeProxy crossModeProxy;
-    CrossModeProxy_Init(&crossModeProxy, "crossmode_channel", "crossMode.crossMode");
+    CrossControllerProxy crossModeProxy;
+    CrossControllerProxy_Init(&crossModeProxy, "crossmode_channel", "crossMode.crossMode");
 
     KosThreadSleep(1000);
 
-    fprintf(stderr, "%-13s [DEBUG] Normal mode testing!\n", "CrossModeProxy");
+    fprintf(stderr, "%-16s [DEBUG] Normal mode testing!\n", "CrossControllerProxy");
 
     /* Test loop. */
     for (i = 0; i < MODES_NUM; i++)
     {
         fprintf(stderr, "request = 0x%08x\n", tl_modes[i]);
 
-        nk_err_t rcResult = CrossModeProxy_SetCrossMode(&crossModeProxy, tl_modes[i]);
+        nk_err_t rcResult = CrossControllerProxy_SetCrossController(&crossModeProxy, tl_modes[i]);
         if (rcOk == rcResult) {
             fprintf(stdout, "result = 0x%08x\n", (int)rcResult);
         } else {
@@ -118,7 +118,7 @@ int main_test(int argc, const char *argv[])
         }
     }
 
-    fprintf(stderr, "%-13s [DEBUG] Full mode testing!\n", "CrossModeProxy");
+    fprintf(stderr, "%-16s [DEBUG] Full mode testing!\n", "CrossControllerProxy");
 
     for (i = 0; i < 10; ++i) {
         for (j = 0; j < 10; ++j) {
@@ -132,7 +132,7 @@ int main_test(int argc, const char *argv[])
 
             fprintf(stderr, "request = 0x%08x\n", mode);
 
-            nk_err_t rcResult = CrossModeProxy_SetCrossMode(&crossModeProxy, mode);
+            nk_err_t rcResult = CrossControllerProxy_SetCrossController(&crossModeProxy, mode);
             if (rcOk == rcResult) {
                 fprintf(stdout, "result = 0x%08x\n", rcResult);
             } else {

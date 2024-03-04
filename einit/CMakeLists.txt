@@ -10,7 +10,7 @@ project_header_default ("STANDARD_GNU_11:YES" "STRICT_WARNINGS:NO")
 # Define the ENTITIES variable with a list of entities.
 set (ENTITIES ControlSystem 
             Connector
-            CrossChecker
+            CrossController
             LightsGPIO
             Diagnostics
             ${precompiled_vfsVfsNet}

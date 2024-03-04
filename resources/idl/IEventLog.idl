@@ -1,6 +1,6 @@
 /** Package with an "IEventLog" interface declaration.
  * 
- * The interface describes logging functionality.
+ *  The interface describes logging functionality.
  */
 
 package traffic_light.IEventLog
@@ -24,7 +24,7 @@ struct EventRecord {
 struct SysHealth {
     EventCode controlSystem;
     EventCode connector;
-    EventCode crossChecker;
+    EventCode crossController;
     EventCode lightsGpio;
     EventCode diagnostics;
 }
