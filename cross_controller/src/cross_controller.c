@@ -2,6 +2,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 // Files required for transport initialization
 #include <coresrv/thread/thread_api.h>
@@ -27,8 +31,9 @@
 
 #include "color_defs.h"
 
-static const char EntityName[] = "CrossController";
-static const char ChannelName[] = "crosscontrol_channel";
+static const nk_char_t EntityName[] = "CrossController";
+static const nk_char_t ChannelName[] = "crosscontrol_channel";
+static const nk_char_t CrossModeFile[] = "crossmode.bin";
 
 #define DEFAILT_CROSS_MODE     0x00000A0A
 #define DEFAULT_DURATION_FREQ  3000
@@ -77,9 +82,17 @@ typedef struct ICrossControlImpl {
 } ICrossControlImpl;
 
 
+// Function declarations
 nk_uint32_t GetNextRegulatedMode(nk_uint32_t curMode);
+
 nk_uint32_t GetNextDuration(nk_uint32_t curMode, ICrossControlImpl *impl);
+
 int RegulatedBehaviorRoutine(void *context);
+
+Retcode WriteModeToFile(const nk_char_t *filePath, nk_uint32_t crossMode,
+                        const nk_char_t *dir1Mode, const nk_char_t *dir2Mode);
+
+Retcode CreateModeFile(const nk_char_t *filePath);
 
 
 // Regulated mode FSM
@@ -212,10 +225,10 @@ int RegulatedBehaviorRoutine(void *context) {
                             impl->curCrossMode = resultMode;
                             impl->curDuration = GetNextDuration(resultMode, impl);
                         } else {
-                        fprintf(stderr, "\x1B[31m%-16s [ERROR] SetCrossLights failed:\n"
-                                        "req={\"mode\": \"0x%08d\", \"color1\": \"%s\", \"color2\"=\"%s\"},\n"
-                                        "err={\"code\": %d, \"message\": \"%s\"}\x1B[0m\n",
-                                        EntityName, nextCrossMode, nextDir1Mode, nextDir2Mode, err, GetErrMessage(err));
+                            fprintf(stderr, "\x1B[31m%-16s [ERROR] SetCrossLights failed:\n"
+                                            "req={\"mode\": \"0x%08d\", \"color1\": \"%s\", \"color2\"=\"%s\"},\n"
+                                            "err={\"code\": %d, \"message\": \"%s\"}\x1B[0m\n",
+                                             EntityName, nextCrossMode, nextDir1Mode, nextDir2Mode, err, GetErrMessage(err));
 
                             impl->reqBehavior = impl->curBehavior;
                             // impl->reqCrossMode = impl->curCrossMode;
@@ -229,6 +242,11 @@ int RegulatedBehaviorRoutine(void *context) {
             timerFreq = impl->timerFreq;
 
             KosMutexUnlock(&impl->timerMutex);
+
+            // Write mode to vfs
+            const nk_char_t *resDir1Mode = GetColorName(resultMode);
+            const nk_char_t *resDir2Mode = GetColorName((resultMode >> 8) & 0xFF);
+            WriteModeToFile(CrossModeFile, resultMode, resDir1Mode, resDir2Mode);
         }
 
         // Sleep thread
@@ -236,6 +254,41 @@ int RegulatedBehaviorRoutine(void *context) {
 
     } while (!timerStop);
     return NK_EOK;
+}
+
+Retcode CreateModeFile(const nk_char_t *filePath) {
+    mode_t modeLog = S_IRWXU | S_IRWXG | S_IRWXO;
+    umask(S_IXUSR | S_IXGRP | S_IXOTH);
+
+    Retcode retCode = rcOk;
+    int fd = open(filePath, O_WRONLY | O_CREAT, modeLog);
+    if (fd < 0) {
+        retCode = rcFail;
+    }
+
+    close(fd);
+    return retCode;
+}
+
+Retcode WriteModeToFile(const nk_char_t *filePath,
+                               nk_uint32_t crossMode,
+                               const nk_char_t *dir1Mode,
+                               const nk_char_t *dir2Mode) {
+
+    FILE *fd = RTL_NULL;
+
+    Retcode retCode = rcOk;
+    if ((fd = fopen(filePath, "w"))) {
+        setvbuf(fd, NULL, _IOLBF, 0);
+
+        fprintf(fd, "{ \"mode\": \"0x%08x\", \"lights\": [\"%s\", \"%s\"] }",
+                    crossMode, dir1Mode, dir2Mode);
+
+        fclose(fd);
+    } else {
+        retCode = rcFail;
+    }
+    return retCode;
 }
 
 // ICrossControl.SetCrossSchedule method implementation
@@ -270,6 +323,7 @@ static nk_err_t SetCrossSchedule_impl(struct ICrossControl *self,
 
     return NK_EOK;
 }
+
 
 // ICrossControl object constructor
 static struct ICrossControl *CreateICrossControlImpl() {
@@ -312,8 +366,13 @@ static struct ICrossControl *CreateICrossControlImpl() {
 
     LogEvent(&impl.logProxy, 0, EntityName, "\"Hello I'm CrossController!\"");
 
+    if (CreateModeFile(CrossModeFile) != rcOk) {
+        fprintf(stderr, "%-16s [ERROR] Error: can`t create file!\n", EntityName);
+    };
+
     return &impl.base;
 }
+
 
 // CrossController entity entry point
 int main(void) {

@@ -1,4 +1,5 @@
 entities:
+
 # The `Connector` entity can call `ControlSystem`
 - name: traffic_light.Connector
   env:
@@ -9,6 +10,7 @@ entities:
   - target: kl.VfsNet
     id: kl.VfsNet    
 @INIT_Connector_ENTITY_CONNECTIONS+@
+
 # The `ControlSystem` entity can call `CrossController`
 - name: traffic_light.ControlSystem
   connections:
@@ -18,13 +20,20 @@ entities:
     id: trafficmode_channel
   - target: traffic_light.Diagnostics
     id: diagnostics_channel
+
 # The `CrossController` entity can call `LightsGPIO's` and `Diagnostics`
 - name: traffic_light.CrossController
+  env:
+    VFS_FILESYSTEM_BACKEND: "client:kl.VfsRamFs"
   connections:
+  - target: kl.VfsRamFs
+    id: kl.VfsRamFs
   - target: traffic_light.LightsGPIO
     id: gpiolights_channel
   - target: traffic_light.Diagnostics
     id: diagnostics_channel
+@INIT_CrossController_ENTITY_CONNECTIONS+@
+
 # The `LightsGPIO` entity can call `Diagnostics`.
 - name: traffic_light.LightsGPIO
   connections:

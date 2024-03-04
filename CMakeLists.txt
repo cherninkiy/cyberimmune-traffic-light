@@ -13,7 +13,6 @@ include (platform/install)
 include (platform/tests)
 add_project_tests_main_target ()
 
-
 # Add Doxygen documentation
 # include (platform/doxygen)
 # add_project_documentation_main_target ()
@@ -33,13 +32,13 @@ set (CMAKE_INCLUDE_CURRENT_DIR ON)
 find_package (vfs REQUIRED)
 include_directories (${vfs_INCLUDE})
 
-# Add a package with the dhcpcd program implementation.
-find_package (rump REQUIRED COMPONENTS DHCPCD_ENTITY)
-include_directories (${rump_INCLUDE})
-
 # Add package with VFS program implementations.
 find_package (precompiled_vfs REQUIRED)
 include_directories (${precompiled_vfs_INCLUDE})
+
+# Add a package with the dhcpcd program implementation.
+find_package (rump REQUIRED COMPONENTS DHCPCD_ENTITY)
+include_directories (${rump_INCLUDE})
 
 # Choose configuration files and the network configuration mode.
 # If none of the options are selected, the ramfs device and the dynamic

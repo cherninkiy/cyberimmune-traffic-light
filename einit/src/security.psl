@@ -111,6 +111,13 @@ request {
         match dst = kl.VfsRamFs                           { grant () }
         match dst = kl.VfsNet                             { grant () }
     }
+
+    match src = traffic_light.CrossController 
+    {
+        match dst = kl.VfsSdCardFs                        { grant () }
+        match dst = kl.VfsRamFs                           { grant () }
+    }
+
     match src = kl.rump.Dhcpcd, dst = kl.VfsRamFs         { grant () }
     match src = kl.rump.Dhcpcd, dst = kl.VfsNet           { grant () }
     match src = kl.VfsSdCardFs, dst = kl.drivers.SDCard   { grant () }
