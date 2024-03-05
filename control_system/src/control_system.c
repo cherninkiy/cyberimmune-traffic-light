@@ -100,19 +100,7 @@ int main(void) {
         //                 EntityName, trafficMode.mode, trafficMode.duration1, trafficMode.color1,
         //                 trafficMode.duration2, trafficMode.color2);
 
-        nk_err_t err = NK_EOK;
-        if (nk_strcmp(trafficMode.mode, "unregulated") == 0) {
-            err = CrossControlProxy_SetCrossSchedule(&crossModeProxy, &trafficMode);
-        }
-        
-        if (nk_strcmp(trafficMode.mode, "regulated") == 0) {
-            err = CrossControlProxy_SetCrossSchedule(&crossModeProxy, &trafficMode);
-        }
-
-        if (nk_strcmp(trafficMode.mode, "manual") == 0) {
-            err = CrossControlProxy_SetCrossSchedule(&crossModeProxy, &trafficMode);
-        }
-
+        nk_err_t err = CrossControlProxy_SetCrossSchedule(&crossModeProxy, &trafficMode);
         if (err != NK_EOK) {
             fprintf(stderr, "\x1B[31m%-16s [ERROR] SetCrossController failed: req={\"mode\": \"%s\", \"color1\": \"%s\", \"color2\"=\"%s\"}, err={code: %d, \"message\": \"%s\"}\x1B[0m\n",
                             EntityName, trafficMode.mode, trafficMode.color1, trafficMode.color2, err, GetErrMessage(err));

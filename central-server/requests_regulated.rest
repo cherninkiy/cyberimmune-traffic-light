@@ -13,7 +13,7 @@ POST http://localhost:8081/manual HTTP/1.1
 content-type: application/json
 
 {
-    "mode":"unregulated", 
+    "mode": "unregulated", 
     "direction_1": "blink-yellow", 
     "direction_2": "blink-yellow"
 }
@@ -23,7 +23,7 @@ POST http://localhost:8081/manual HTTP/1.1
 content-type: application/json
 
 {
-    "mode":"regulated", 
+    "mode": "regulated", 
     "direction_1": 5, 
     "direction_2": 5
 }
@@ -31,11 +31,12 @@ content-type: application/json
 ### post diagnostics status
 
 POST http://localhost:8081/diagnostics HTTP/1.1
-content-type: application/json
+Content-Type: application/json
 
 {
-    "tl-id":"12345", 
-    "tl-status": "ok", 
-    "tl-mode-id": "aaabbbccc"
+    "ControlSystem":   "0x00000001",
+    "Connector":       "0x22776f6c",
+    "CrossController": "0x00000002",
+    "LightsGPIO":      "0x00000000",
+    "Diagnostics":     "0x00000000"
 }
-

@@ -4,7 +4,7 @@ from json import dumps
 
 @get('/test')
 def process_test():
-    return '{"result": "test passed"}'
+    return '{"event": "test", "result": "passed"}'
 
 
 @route('/mode/<tl_id>', method = 'GET')
@@ -43,7 +43,7 @@ def process_kos():
     global tl_mode
     tl_mode = data
 
-    result ={"result": "success", "event": "mode changed", "data": data}
+    result ={"event": "mode changed", "result": "success", "data": data}
     return dumps(result)
 
 
@@ -51,15 +51,15 @@ def process_kos():
 def process_diagnostics():
     data = request.json
     print(f'Received diagnostics:\n{data}\n')
-    result ={"result": "success", "event": "diagnostics received", "data": data}
+    result ={"event": "diagnostics received", "result": "success", "data": data}
     return dumps(result)
 
 
 tl_mode = {
     # 'unregulated' | 'regulated' | 'manual'
     'mode': 'unregulated',
-    # if mode == 'regulated' then green light duration
-    # if mode == 'manual' then color
+    # if mode == 'regulated' then green light duration ('direction_1': 30)
+    # if mode == 'manual' then color ('direction_1': "green")
     'direction_1': "blink-yellow",
     # if mode == 'regulated' then green light duration
     # if mode == 'manual' then color

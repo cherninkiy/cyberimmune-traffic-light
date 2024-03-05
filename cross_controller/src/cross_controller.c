@@ -319,7 +319,7 @@ static nk_err_t SetCrossSchedule_impl(struct ICrossControl *self,
 
     char msgBuffer[IEventLog_MaxTextLength];
     snprintf(msgBuffer, IEventLog_MaxTextLength, "{\"behavior\": %d, \"mode\": \"0x%08x\"}", curBehavior, curCrossMode);
-    LogEvent(&impl->logProxy, 2, EntityName, msgBuffer);
+    LogEvent(&impl->logProxy, curCrossMode, EntityName, msgBuffer);
 
     return NK_EOK;
 }

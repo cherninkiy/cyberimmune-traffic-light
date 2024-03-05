@@ -11,6 +11,8 @@
 #include <unistd.h> // read(), write(), close()
 #include <strings.h> // bzero()
 #include <assert.h>
+#include <wchar.h>
+
 
 /* Files required for transport initialization. */
 #include <coresrv/nk/transport-kos.h>
@@ -37,7 +39,7 @@
 #define HOST_PORT               8081
 #define NUM_RETRIES             10
 #define MSG_BUF_SIZE            1024
-#define MSG_CHUNK_BUF_SIZE      512
+#define MSG_CHUNK_BUF_SIZE      256
 #define SA struct sockaddr
 
 
@@ -54,8 +56,7 @@ int get_traffic_light_configuration(traffic_light_mode *mode) {
     if (sockfd == -1) {
         fprintf(stderr, "%-16s [ERROR] Socket creation failed!\n", EntityName);
         return EXIT_FAILURE;
-    }
-    else {
+    } else {
         // fprintf(stderr, "%-16s [DEBUG] Socket successfully created\n", EntityName);
     }
     bzero(&servaddr, sizeof(servaddr));
@@ -71,8 +72,7 @@ int get_traffic_light_configuration(traffic_light_mode *mode) {
     servaddr.sin_port = htons(HOST_PORT);
 
     int res = -1;
-    for (int i = 0; res == -1 && i < NUM_RETRIES; i++)
-    {
+    for (int i = 0; res == -1 && i < NUM_RETRIES; i++) {
         sleep(1); // Wait some time for server be ready.
         res = connect(sockfd, (SA*)&servaddr, sizeof(servaddr));
     }
@@ -80,10 +80,8 @@ int get_traffic_light_configuration(traffic_light_mode *mode) {
     // connect the client socket to server socket
     if (res != 0) {
         fprintf(stderr, "%-16s [ERROR] Connection not established: error=%d\n", EntityName, res);
-    }
-    else {
+    } else {
         // fprintf(stderr, "%-16s [DEBUG] Connection established\n", EntityName);
-
     }
 
     // printf("preparing request..\n");
@@ -97,8 +95,6 @@ int get_traffic_light_configuration(traffic_light_mode *mode) {
     snprintf(request_data, MSG_CHUNK_BUF_SIZE,
         "GET /mode/112233 HTTP/1.1\r\n"
         "Host: 172.20.172.221:5765\r\n\r\n"
-        // "Host-Agent: KOS\r\n"
-        // "Accept: */*\r\n"
     );
 
     request_len = strlen(request_data);
@@ -107,12 +103,10 @@ int get_traffic_light_configuration(traffic_light_mode *mode) {
     // fprintf(stderr, "%s, sending request: %s\n len: %d\n", EntityName, request_data, request_len);
 
     /// Write the request
-    if (write(sockfd, request_data, request_len) >= 0)
-    {
+    if (write(sockfd, request_data, request_len) >= 0) {
         // fprintf(stderr, "%s request sent, reading response..\n", EntityName);
         /// Read the response
-        while ((n = read(sockfd, response_data_chunk, MSG_BUF_SIZE)) > 0)
-        {
+        while ((n = read(sockfd, response_data_chunk, MSG_BUF_SIZE)) > 0) {
             strcat(response_data, response_data_chunk);
             // fprintf(stderr, "%s response data: \n%s\n", EntityName, response_data);
         }
@@ -152,8 +146,7 @@ int send_self_diagnostics(sys_health_data *diagnostic_data) {
     servaddr.sin_port = htons(HOST_PORT);
 
     int res = -1;
-    for (int i = 0; res == -1 && i < NUM_RETRIES; i++)
-    {
+    for (int i = 0; res == -1 && i < NUM_RETRIES; i++) {
         sleep(1); // Wait some time for server be ready.
         res = connect(sockfd, (SA*)&servaddr, sizeof(servaddr));
     }
@@ -164,49 +157,59 @@ int send_self_diagnostics(sys_health_data *diagnostic_data) {
     }
     else {
         // fprintf(stderr, "%-16s [DEBUG] Connection established\n", EntityName);
-
     }
 
-    // printf("preparing request..\n");
+    printf("preparing request..\n");
 
-    char request_data[MSG_BUF_SIZE];
-    char response_data[MSG_BUF_SIZE];
-    char response_data_chunk[MSG_BUF_SIZE];
-    int  request_len = 0;    
-    size_t n;
-
-    snprintf(request_data, MSG_CHUNK_BUF_SIZE,
-        "POST /diagnostics HTTP/1.1\n"
-        "Content-Type: application/json\n\n"
-        "{\n"
-        "    \"ControlSystem\":   \"0x%08x\",\n" 
-        "    \"Connector\":       \"0x%08x\",\n"
-        "    \"CrossController\": \"0x%08x\",\n"
-        "    \"LightsGPIO\":      \"0x%08x\",\n"
-        "    \"Diagnostics\":     \"0x%08x\"\n"
-        "}",
+    char json_data[MSG_BUF_SIZE];
+    snprintf(json_data, MSG_BUF_SIZE,
+        "{\r\n"
+        "    \"ControlSystem\":   \"0x%08x\",\r\n"
+        "    \"Connector\":       \"0x%08x\",\r\n"
+        "    \"CrossController\": \"0x%08x\",\r\n"
+        "    \"LightsGPIO\":      \"0x%08x\",\r\n"
+        "    \"Diagnostics\":     \"0x%08x\"\r\n"
+        "}\r\n",
         diagnostic_data->controlSystem,
         diagnostic_data->connector,
         diagnostic_data->crossChecker,
         diagnostic_data->lightsGPIO,
         diagnostic_data->diagnostics
     );
+    size_t json_len = strlen(json_data);
 
-    request_len = strlen(request_data);
+
+    char request_data[MSG_BUF_SIZE];
+    snprintf(request_data, MSG_BUF_SIZE,
+        "POST /diagnostics HTTP/1.1\r\n"
+        "Host: 172.20.172.221:5765\r\n"
+        "content-length: %d\r\n"
+        "content-type: application/json\r\n\r\n"
+        "%s",
+        json_len,
+        json_data
+    );
+    size_t request_len = strlen(request_data);
+
+
+    size_t n;
+    char response_data[MSG_BUF_SIZE];
+    char response_data_chunk[MSG_BUF_SIZE];
     response_data[0] = 0;
     response_data_chunk[0] = 0;
-    fprintf(stderr, "%s, sending request: %s\n len: %d\n", EntityName, request_data, request_len);
+
+    fprintf(stderr, "%s, sending request: len=%d\n%s\n", EntityName, request_len, request_data);
 
     /// Write the request
     if (write(sockfd, request_data, request_len) >= 0) {
         fprintf(stderr, "%s request sent, reading response..\n", EntityName);
-        /// Read the response
-        while ((n = read(sockfd, response_data_chunk, MSG_BUF_SIZE)) > 0) {
-            strcat(response_data, response_data_chunk);
-            fprintf(stderr, "%s response data: \n%s\n", EntityName, response_data);
-        }
+        // /// Read the response
+        // while ((n = read(sockfd, response_data_chunk, MSG_BUF_SIZE)) > 0) {
+        //     strcat(response_data, response_data_chunk);
+        //     fprintf(stderr, "%s response data: \n%s\n", EntityName, response_data);
+        // }
     }
-    fprintf(stderr, "%s read data: %s..\n", EntityName, response_data);
+    // fprintf(stderr, "%s read data: %s..\n", EntityName, response_data);
 
     // close the socket
     close(sockfd);
@@ -245,7 +248,7 @@ static nk_err_t GetTrafficMode_impl(struct ITrafficMode *self,
     snprintf(msgBuffer, IEventLog_MaxTextLength,
              "{\"mode\": \"%s\", \"color1\": \"%s\", \"color2\": \"%s\"}",
              mode.mode, mode.direction_1_color, mode.direction_2_color);
-    LogEvent(&impl->logProxy, 2, EntityName, msgBuffer);
+    LogEvent(&impl->logProxy, 1, EntityName, msgBuffer);
 
     return NK_EOK;
 }
@@ -363,34 +366,6 @@ int main(int argc, char** argv)
             // continue;
         }
     } while (true);
-
-    return EXIT_SUCCESS;
-}
-
-/* Connector entity entry point. */
-int main_test(int argc, const char *argv[]) {
-
-    // fprintf(stderr, "%-16s [DEBUG] Entity initialized: state={\"mode\": 0x%08x, \"lights\": [\"%s\", \"%s\"]}\n",
-    //                 EntityName, impl.mode, gpio1Color, gpio2Color);
-    // fprintf(stderr, "%-16s [DEBUG] Hello, I'm about to start working\n", EntityName);
-
-    // bool is_network_available;
-    // is_network_available = wait_for_network();
-    // fprintf(stderr, "%-16s [DEBUG] Network status: %s\n", EntityName, is_network_available ? "UP" : "DOWN");
-
-
-    // // Diagnostics
-    // EventLogProxy logProxy;
-    // EventLogProxy_Init(&logProxy);
-    // LogEvent(&logProxy, 0, EntityName, "\"Hello I'm Connector!\"");
-    
-    // do {
-    
-    //     int rc = get_traffic_light_configuration();    
-    //     fprintf(stderr, "%-16s Сonfiguration parsing status: %s\n", EntityName, rc == EXIT_SUCCESS ? "OK" : "FAILED");
-    // //     LogEvent(&logProxy, 0, EntityName, "\"Hello I'm Connector!\"");
-    //     KosThreadSleep(1000);
-    // } while (true);
 
     return EXIT_SUCCESS;
 }

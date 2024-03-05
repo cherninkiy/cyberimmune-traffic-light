@@ -69,8 +69,11 @@ static nk_err_t SetCrossLights_impl(struct ILightsGpio *self,
     // Store new mode
     impl->mode = req->lights.crossMode;
 
+
     // Set result
     res->result = impl->mode;
+
+    LogEvent(&impl->logProxy, impl->mode, EntityName, "\"Lights changed!\"");
 
     return NK_EOK;
 }
