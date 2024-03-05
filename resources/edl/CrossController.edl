@@ -1,0 +1,5 @@
+entity traffic_light.CrossController
+
+components {
+    crossController : traffic_light.CrossControl
+}

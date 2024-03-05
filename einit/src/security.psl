@@ -1,84 +1,247 @@
-/* Security configuration of the "traffic light" example. */
-/* nk.basic._ is required for comparison operations support in policies, like != below */
+// Security configuration of the "traffic light" example.
+// nk.basic._ is required for comparison operations support in policies, like != below
 use nk.basic._
 
-/* Definition of the execute interface. */
+// Definition of the execute interface
 execute: kl.core.Execute
 
-/* Import the file with the declaration of basic security policy aliases. */
+// Import the file with the declaration of basic security policy aliases
 use nk.base._
+use nk.flow._
+use nk.regex._
 
-/* Declaration of entities. */
-use EDL Einit
+// Declaration of entities
 use EDL kl.core.Core
+use EDL kl.VfsRamFs
+use EDL kl.VfsSdCardFs
+use EDL kl.VfsNet
+use EDL kl.rump.Dhcpcd
+use EDL kl.drivers.SDCard
+use EDL kl.drivers.RAMDisk
+use EDL kl.drivers.BSP
+use EDL kl.drivers.GPIO
+
+use EDL Einit
 
 use EDL traffic_light.ControlSystem
+use EDL traffic_light.CrossController
 use EDL traffic_light.LightsGPIO
+use EDL traffic_light.Diagnostics
+use EDL traffic_light.Connector
 
-/* Execution of entities allowed. */
+
+policy object flow_direction1 : Flow {
+    type State = "blink-yellow" | "green" | "blink-green" | "yellow" | "red" | "red-yellow"
+    config = {
+        states: ["blink-yellow", "green", "blink-green", "yellow", "red", "red-yellow"],
+        initial: "blink-yellow",
+        transitions: {
+            //                 LOOP            REGULATED
+            "blink-yellow": ["blink-yellow", "green", "red"],
+            
+            //                 LOOP            REGULATED       UNREGULATED
+            "green":        ["green",        "blink-green",  "blink-yellow"],
+            "blink-green":  ["blink-green",  "yellow"],
+            "yellow":       ["yellow",       "red"],
+            "red":          ["red",          "red-yellow",   "blink-yellow"],
+            "red-yellow":   ["red-yellow",   "green"],
+        }
+    }
+}
+
+policy object flow_direction2 : Flow {
+    type State = "blink-yellow" | "green" | "blink-green" | "yellow" | "red" | "red-yellow"
+    config = {
+        states: ["blink-yellow", "green", "blink-green", "yellow", "red", "red-yellow"],
+        initial: "blink-yellow",
+        transitions: {
+            //                 LOOP            REGULATED
+            "blink-yellow": ["blink-yellow", "green", "red"],
+            
+            //                 LOOP            REGULATED       UNREGULATED
+            "green":        ["green",        "blink-green",  "blink-yellow"],
+            "blink-green":  ["blink-green",  "yellow"],
+            "yellow":       ["yellow",       "red"],
+            "red":          ["red",          "red-yellow",   "blink-yellow"],
+            "red-yellow":   ["red-yellow",   "green"],
+        }
+    }
+}
+
+// Execution of entities allowed
 execute {
+    flow_direction1.init {sid : dst_sid}
+    flow_direction2.init {sid : dst_sid}
     grant ()
 }
 
-/* Request messages allowed. */
-request src=traffic_light.ControlSystem {
-    grant ()
+request {
+    grant()
+}
+// Request messages: ANY -> kl.core.Core
+request {
+    match dst=kl.core.Core {
+        match src=Einit { grant() }
+        match src=traffic_light.ControlSystem { grant() }
+        match src=traffic_light.CrossController { grant() }
+        match src=traffic_light.LightsGPIO { grant() }
+        match src=traffic_light.Diagnostics { grant() }
+        match src=traffic_light.Connector { grant() }
+
+        match src = kl.drivers.BSP                        { grant () }
+        match src = kl.drivers.GPIO                       { grant () }
+        match src = kl.rump.Dhcpcd                        { grant () }
+        match src = kl.drivers.RAMDisk                    { grant () }
+        match src = kl.VfsNet                             { grant () }
+        match src = kl.VfsRamFs                           { grant () }
+        match src = kl.VfsSdCardFs                        { grant () }
+        match src = kl.drivers.SDCard                     { grant () }
+        match src = kl.VfsRamFs                           { grant () }
+    }
+
+    /* Allows all requests from the core */
+    match src = kl.core.Core                              { grant () }
+
+    /* Allows all requests from initialization */
+    match src = Einit                                     { grant () }
+
+    match src = traffic_light.Connector 
+    {
+        match dst = kl.VfsSdCardFs                        { grant () }
+        match dst = kl.VfsRamFs                           { grant () }
+        match dst = kl.VfsNet                             { grant () }
+    }
+
+    match src = traffic_light.CrossController 
+    {
+        match dst = kl.VfsSdCardFs                        { grant () }
+        match dst = kl.VfsRamFs                           { grant () }
+    }
+
+    match src = kl.rump.Dhcpcd, dst = kl.VfsRamFs         { grant () }
+    match src = kl.rump.Dhcpcd, dst = kl.VfsNet           { grant () }
+    match src = kl.VfsSdCardFs, dst = kl.drivers.SDCard   { grant () }
+    match src = kl.VfsRamFs, dst = kl.drivers.RAMDisk     { grant () }
 }
 
-
-request src=traffic_light.ControlSystem dst=kl.core.Core {
-    grant ()
-}
-
-
+// Request messages: ControlSystem -> CrossController
 request src=traffic_light.ControlSystem 
-    dst=traffic_light.LightsGPIO 
-    endpoint=lightsGpio.mode 
-    method=FMode {
-        grant()
+        dst=traffic_light.Connector 
+        endpoint=trafficMode.trafficMode 
+        method=GetTrafficMode {
+    grant()
 }
 
-/*
+// Request messages: ControlSystem -> CrossController
 request src=traffic_light.ControlSystem 
-    dst=traffic_light.LightsGPIO 
-    endpoint=lightsGpio.mode 
-    method=FMode {
-        assert (message.value != 0x404)        
-}
-*/
+        dst=traffic_light.CrossController 
+        endpoint=crossController.crossControl
+        method=SetCrossSchedule {
 
-request src=Einit {
-    grant ()
+    grant()
 }
 
-request src=kl.core.Core {
-    grant ()
+// Request messages: CrossController -> LightsGPIO
+request src=traffic_light.CrossController 
+        dst=traffic_light.LightsGPIO 
+        endpoint=lightsGpio.lightsGpio 
+        method=SetCrossLights {
+
+    /** Combinations policy:
+     *      Deny all "green" combintaions except               {["green", "red"], ["red", "green"]}
+     *      Deny all "blink-green" combinations except         {["blink-green", "red"], ["red", "blink-green"]}
+     *      Deny all "yellow"|"red-yellow" combinations except {["yellow", "red-yellow"], ["red-yellow", "yellow"]}
+     *                                                         {["yellow", "red"], ["red", "yellow"]}
+     *                                                         {["red-yellow", "red"], ["red", "red-yellow"]}
+     *      Deny all "blink-yellow" combinations except        {["blink-yellow", "blink-yellow"]}
+     *      Allow all "red" combinations                       {["red", "red"]}
+     */
+
+    assert(bool.any [
+        message.lights.crossMode == 0x00000A0A, // ["blink-yellow", "blink-yellow"]
+        message.lights.crossMode == 0x00000203, // ["yellow",       "red-yellow"]
+        message.lights.crossMode == 0x00000302, // ["red-yellow",   "yellow"]
+        message.lights.crossMode == 0x0000010C, // ["red",          "blink-green"]
+        message.lights.crossMode == 0x00000C01, // ["blink-green",  "red"]
+        message.lights.crossMode == 0x00000104, // ["red",          "green"]
+        message.lights.crossMode == 0x00000401, // ["green",        "red"]
+        message.lights.crossMode == 0x00000102, // ["red",          "yellow"]
+        message.lights.crossMode == 0x00000201, // ["yellow",       "red"]
+        message.lights.crossMode == 0x00000103, // ["red",          "red-yellow"]
+        message.lights.crossMode == 0x00000301, // ["red-yellow",   "red"]
+        message.lights.crossMode == 0x00000101  // ["red",          "red"]
+    ])
+
+    /** Transitions policy */
+
+    choice (re.select {text : message.lights.dir1Mode}) {
+        "blink-yellow": {
+                flow_direction1.enter {sid : dst_sid, state : "blink-yellow"}
+            }
+        "green": {
+                flow_direction1.enter {sid : dst_sid, state : "green"}
+            }
+        "blink-green": {
+                flow_direction1.enter {sid : dst_sid, state : "blink-green"}
+            }
+        "yellow": {
+                flow_direction1.enter {sid : dst_sid, state : "yellow"}
+            }
+        "red": {
+                flow_direction1.enter {sid : dst_sid, state : "red"}
+            }
+        "red-yellow": {
+                flow_direction1.enter {sid : dst_sid, state : "red-yellow"}
+            }
+        _: deny()
+    }
+
+    choice (re.select {text : message.lights.dir2Mode}) {
+        "blink-yellow": {
+                flow_direction2.enter {sid : dst_sid, state : "blink-yellow"}
+            }
+        "green": {
+                flow_direction2.enter {sid : dst_sid, state : "green"}
+            }
+        "blink-green": {
+                flow_direction2.enter {sid : dst_sid, state : "blink-green"}
+            }
+        "yellow": {
+                flow_direction2.enter {sid : dst_sid, state : "yellow"}
+            }
+        "red": {
+                flow_direction2.enter {sid : dst_sid, state : "red"}
+            }
+        "red-yellow": {
+                flow_direction2.enter {sid : dst_sid, state : "red-yellow"}
+            }
+        _: deny()
+    }
 }
 
-request src=traffic_light.LightsGPIO dst=kl.core.Core {
-    grant ()
+// Request messages: ANY -> Diagnostics
+request dst=traffic_light.Diagnostics 
+        endpoint=eventLog.eventLog 
+        method=Collect {
+
+    match src=traffic_light.CrossController { grant () }
+    match src=traffic_light.LightsGPIO { grant () }
+    match src=traffic_light.ControlSystem { grant () }
+    match src=traffic_light.Connector { grant () }
 }
 
-
-/* Response messages allowed. */
+// Response messages allowed
 response {
-    grant ()
+    grant()
 }
 
-/*
-response src=traffic_light.LightsGPIO 
-    dst=traffic_light.ControlSystem 
-    endpoint=lightsGpio.mode 
-    method=FMode {
-        assert (message.result < 0x1000404)
-}
-*/
 
+// Error messages allowed
 error {
     grant ()
 }
 
-/* Calls to the security interface are ignored. */
+// Calls to the security interface are ignored
 security {
     grant ()
 }

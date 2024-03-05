@@ -1,0 +1,72 @@
+### post manual mode "green" - "green" (ERROR)
+POST http://localhost:8081/manual HTTP/1.1
+content-type: application/json
+
+{
+    "mode":"manual", 
+    "direction_1": "green", 
+    "direction_2": "green"
+}
+
+### post manual mode "red" - "red" (OK)
+POST http://localhost:8081/manual HTTP/1.1
+content-type: application/json
+
+{
+    "mode":"manual", 
+    "direction_1": "red", 
+    "direction_2": "red"
+}
+
+### post manual mode "red" - "red-yellow" (OK)
+POST http://localhost:8081/manual HTTP/1.1
+content-type: application/json
+
+{
+    "mode":"manual", 
+    "direction_1": "red", 
+    "direction_2": "red-yellow"
+}
+
+### post regulated mode  "red" - "green" (OK)
+POST http://localhost:8081/manual HTTP/1.1
+content-type: application/json
+
+{
+    "mode":"manual", 
+    "direction_1": "red", 
+    "direction_2": "green"
+}
+
+
+### post regulated mode  "red" - "blink-green" (OK)
+POST http://localhost:8081/manual HTTP/1.1
+content-type: application/json
+
+{
+    "mode":"manual", 
+    "direction_1": "red", 
+    "direction_2": "blink-green"
+}
+
+### post regulated mode  "red-yellow" - "yellow" (OK)
+POST http://localhost:8081/manual HTTP/1.1
+content-type: application/json
+
+{
+    "mode":"manual", 
+    "direction_1": "red-yellow", 
+    "direction_2": "yellow"
+}
+
+
+### post regulated mode  "green" - "red" (OK)
+POST http://localhost:8081/manual HTTP/1.1
+content-type: application/json
+
+{
+    "mode":"manual", 
+    "direction_1": "green", 
+    "direction_2": "red"
+}
+

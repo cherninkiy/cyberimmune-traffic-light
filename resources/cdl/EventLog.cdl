@@ -1,0 +1,8 @@
+/* Definition of the `EventLog` component. */
+
+component traffic_light.EventLog
+
+endpoints {
+    /* Declaration of a named implementation of the "IEventLog" interface. */
+    eventLog : traffic_light.IEventLog
+}

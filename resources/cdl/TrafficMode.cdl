@@ -1,0 +1,8 @@
+/* Definition of the `TrafficMode` component. */
+
+component traffic_light.TrafficMode
+
+endpoints {
+    /* Declaration of a named implementation of the "TrafficMode" interface. */
+    trafficMode : traffic_light.ITrafficMode
+}

@@ -1,0 +1,8 @@
+/* Definition of the `CrossControl` component. */
+
+component traffic_light.CrossControl
+
+endpoints {
+    /* Declaration of a named implementation of the "CrossControl" interface. */
+    crossControl : traffic_light.ICrossControl
+}

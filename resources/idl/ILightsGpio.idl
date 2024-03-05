@@ -1,0 +1,50 @@
+/** Package with an "ILightsGpio" interface declaration.
+ * 
+ *  The interface describes the functionality of GPIO controller for lights components.
+ */
+
+package traffic_light.ILightsGpio
+
+// Cross mode binary masks
+const UInt32 Direction1Red    = 0x00000001;
+const UInt32 Direction1Yellow = 0x00000002;
+const UInt32 Direction1Green  = 0x00000004;
+const UInt32 Direction1Blink  = 0x00000008;
+
+const UInt32 Direction2Red    = 0x00000100;
+const UInt32 Direction2Yellow = 0x00000200;
+const UInt32 Direction2Green  = 0x00000400;
+const UInt32 Direction2Blink  = 0x00000800;
+
+// Regulated cross modes
+const UInt32 Regulated1Green2Red        = 0x00000104;
+const UInt32 Regulated1BlinkGreen2Red   = 0x0000010C;
+const UInt32 Regulated1Yellow2RedYellow = 0x00000302;
+const UInt32 Regulated1Red2Green        = 0x00000401;
+const UInt32 Regulated1Red2BlinkGreen   = 0x00000C01;
+const UInt32 Regulated1RedYellow2Yellow = 0x00000203;
+
+// Unregulated cross mode
+const UInt32 Unregulated1BlinkYellow2BlinkYellow = 0x00000A0A;
+
+
+const UInt32 MaxLength = 16;
+
+// Color name or blinking color or their combination.
+typedef string<MaxLength> LightsMode;
+
+// Ligths modes for crossdir.
+struct CrossLights {
+    // Cross mode (binary)
+    UInt32 crossMode;
+    // Directions modes (string)
+    LightsMode dir1Mode;
+    LightsMode dir2Mode;
+}
+
+interface {
+    // The method should implement maintenance for GPIO connected lights components.
+    // lights - Cross lights mode to set.
+    // result - Result cross mode (binary).
+    SetCrossLights(in CrossLights lights, out UInt32 result);
+}

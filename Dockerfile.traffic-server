@@ -1,0 +1,13 @@
+FROM python:3.10-slim-bullseye
+
+WORKDIR /app
+
+COPY central-server/* /app/
+
+RUN pip install -r requirements.txt
+
+RUN adduser --disabled-password --gecos "" user
+
+EXPOSE 8081
+
+ENTRYPOINT [ "python", "central-server.py" ]

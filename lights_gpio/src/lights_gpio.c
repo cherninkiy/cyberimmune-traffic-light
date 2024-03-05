@@ -1,137 +1,171 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-
-/* Files required for transport initialization. */
-#include <coresrv/nk/transport-kos.h>
-#include <coresrv/sl/sl_api.h>
-
-/* EDL description of the LightsGPIO entity. */
-#include <traffic_light/LightsGPIO.edl.h>
-
 #include <assert.h>
 
-/* Type of interface implementing object. */
-typedef struct IModeImpl {
-    struct traffic_light_IMode base;     /* Base interface of object */
-    rtl_uint32_t step;                   /* Extra parameters */
-} IModeImpl;
+// Files required for transport initialization
+#include <coresrv/nk/transport-kos.h>
+#include <coresrv/sl/sl_api.h>
+#include <nk/arena.h>
+#include <nk/types.h>
 
-/* Mode method implementation. */
-static nk_err_t FMode_impl(struct traffic_light_IMode *self,
-                          const struct traffic_light_IMode_FMode_req *req,
-                          const struct nk_arena *req_arena,
-                          traffic_light_IMode_FMode_res *res,
-                          struct nk_arena *res_arena)
-{
-    IModeImpl *impl = (IModeImpl *)self;
-    /**
-     * Increment value in control system request by
-     * one step and include into result argument that will be
-     * sent to the control system in the lights gpio response.
-     */
-    res->result = req->value + impl->step;
+#define NK_USE_UNQUALIFIED_NAMES
+
+// ILightsGpio Server
+#include <traffic_light/ILightsGpio.idl.h>
+#include <traffic_light/LightsGpio.cdl.h>
+#include <traffic_light/LightsGPIO.edl.h>
+
+// IEventLog Client
+#include "eventlog_proxy.h"
+
+#include "color_defs.h"
+
+static const nk_char_t EntityName[] = "LightsGPIO";
+static const nk_char_t ChannelName[] = "gpiolights_channel";
+static const nk_uint32_t DefaultLightsMode = ILightsGpio_Direction1Blink
+                                     | ILightsGpio_Direction1Yellow
+                                     | ILightsGpio_Direction2Blink
+                                     | ILightsGpio_Direction2Yellow;
+
+// ILightsGpio implementing type
+typedef struct ILightsGpioImpl {
+    // Base interface of object
+    struct ILightsGpio base;
+    // Cross lights binary mode
+    nk_uint32_t mode;
+    // Diagnostics
+    EventLogProxy logProxy;
+} ILightsGpioImpl;
+
+// ILightsGpio.SetCrossLights method implementation
+static nk_err_t SetCrossLights_impl(struct ILightsGpio *self,
+                                    const struct ILightsGpio_SetCrossLights_req *req,
+                                    const struct nk_arena *req_arena,
+                                    struct ILightsGpio_SetCrossLights_res *res,
+                                    struct nk_arena *res_arena) {
+
+    ILightsGpioImpl *impl = (ILightsGpioImpl *)self;
+
+    // Current mode
+    nk_uint32_t curCrossController = impl->mode;
+    const nk_char_t *curDir1Mode = GetConsoleColor(curCrossController & 0xFF);
+    const nk_char_t *curDir2Mode = GetConsoleColor((curCrossController >> 8) & 0xFF);
+
+    // Requested mode
+    nk_uint32_t reqCrossController = req->lights.crossMode;
+    const nk_char_t *reqDir1Mode = GetConsoleColor(reqCrossController & 0xFF);
+    const nk_char_t *reqDir2Mode = GetConsoleColor((reqCrossController >> 8) & 0xFF);
+
+    fprintf(stderr, "%-16s [DEBUG] Request SetCrossLights: \n"
+                    "current={\"mode\": 0x%08x, \"lights\": [\"%s\", \"%s\"]}\n"
+                    "request={\"mode\": 0x%08x, \"lights\": [\"%s\", \"%s\"]}\n",
+                    EntityName, curCrossController, curDir1Mode, curDir2Mode,
+                                reqCrossController, reqDir1Mode, reqDir2Mode);
+
+    // Some GPIO-related code
+    // ......................
+
+    // Store new mode
+    impl->mode = req->lights.crossMode;
+
+
+    // Set result
+    res->result = impl->mode;
+
+    LogEvent(&impl->logProxy, impl->mode, EntityName, "\"Lights changed!\"");
+
     return NK_EOK;
 }
 
-/**
- * IMode object constructor.
- * step is the number by which the input value is increased.
- */
-static struct traffic_light_IMode *CreateIModeImpl(rtl_uint32_t step)
-{
-    /* Table of implementations of IMode interface methods. */
-    static const struct traffic_light_IMode_ops ops = {
-        .FMode = FMode_impl
+// ILightsGpio object constructor
+static struct ILightsGpio *CreateILightsGpioImpl() {
+
+    // Table of implementations of ILightsGpio interface methods
+    static const struct ILightsGpio_ops ops = {
+        .SetCrossLights = SetCrossLights_impl
     };
 
-    /* Interface implementing object. */
-    static struct IModeImpl impl = {
-        .base = {&ops}
+    // Interface implementing object
+    static struct ILightsGpioImpl impl = {
+        .base = {&ops},
+        .mode = DefaultLightsMode
     };
 
-    impl.step = step;
+    EventLogProxy_Init(&impl.logProxy);
+
+    const nk_char_t *dir1Mode = GetConsoleColor(impl.mode & 0xFF);
+    const nk_char_t *dir2Mode = GetConsoleColor((impl.mode >> 8) & 0xFF);
+    fprintf(stderr, "%-16s [DEBUG] Entity initialized: "
+                    "state={\"mode\": 0x%08x, \"lights\": [\"%s\", \"%s\"]}\n",
+                    EntityName, impl.mode, dir1Mode, dir2Mode);
+
+    LogEvent(&impl.logProxy, 0, EntityName, "\"Hello I'm LightsGPIO!\"");
 
     return &impl.base;
 }
 
-/* Lights GPIO entry point. */
-int main(void)
-{
-    NkKosTransport transport;
-    ServiceId iid;
+// LightsGPIO entry point
+int main(void) {
 
-    /* Get lights gpio IPC handle of "lights_gpio_connection". */
-    Handle handle = ServiceLocatorRegister("lights_gpio_connection", NULL, 0, &iid);
+    // Request transport structures
+    LightsGPIO_entity_req req;
+    char reqBuffer[LightsGPIO_entity_req_arena_size];
+    struct nk_arena reqArena = NK_ARENA_INITIALIZER(reqBuffer, reqBuffer + LightsGPIO_entity_req_arena_size);
+
+    // Response transport structures
+    LightsGPIO_entity_res res;
+    char resBuffer[LightsGPIO_entity_res_arena_size];
+    struct nk_arena resArena = NK_ARENA_INITIALIZER(resBuffer, resBuffer + LightsGPIO_entity_res_arena_size);
+
+    // Component dispatcher
+    LightsGpio_component component;
+    LightsGpio_component_init(&component, CreateILightsGpioImpl());
+
+    // Entity dispatcher
+    LightsGPIO_entity entity;
+    LightsGPIO_entity_init(&entity, &component);
+
+    // Get IPC service handle
+    ServiceId iid;
+    Handle handle = ServiceLocatorRegister(ChannelName, NULL, 0, &iid);
     assert(handle != INVALID_HANDLE);
 
-    /* Initialize transport to control system. */
+    // Initialize transport
+    NkKosTransport transport;
     NkKosTransport_Init(&transport, handle, NK_NULL, 0);
 
-    /**
-     * Prepare the structures of the request to the lights gpio entity: constant
-     * part and arena. Because none of the methods of the lights gpio entity has
-     * sequence type arguments, only constant parts of the
-     * request and response are used. Arenas are effectively unused. However,
-     * valid arenas of the request and response must be passed to
-     * lights gpio transport methods (nk_transport_recv, nk_transport_reply) and
-     * to the lights gpio method.
-     */
-    traffic_light_LightsGPIO_entity_req req;
-    char req_buffer[traffic_light_LightsGPIO_entity_req_arena_size];
-    struct nk_arena req_arena = NK_ARENA_INITIALIZER(req_buffer,
-                                        req_buffer + sizeof(req_buffer));
-
-    /* Prepare response structures: constant part and arena. */
-    traffic_light_LightsGPIO_entity_res res;
-    char res_buffer[traffic_light_LightsGPIO_entity_res_arena_size];
-    struct nk_arena res_arena = NK_ARENA_INITIALIZER(res_buffer,
-                                        res_buffer + sizeof(res_buffer));
-
-    /**
-     * Initialize mode component dispatcher. 3 is the value of the step,
-     * which is the number by which the input value is increased.
-     */
-    traffic_light_CMode_component component;
-    traffic_light_CMode_component_init(&component, CreateIModeImpl(0x1000000));
-
-    /* Initialize lights gpio entity dispatcher. */
-    traffic_light_LightsGPIO_entity entity;
-    traffic_light_LightsGPIO_entity_init(&entity, &component);
-
-    fprintf(stderr, "Hello I'm LightsGPIO\n");
-
-    /* Dispatch loop implementation. */
-    do
-    {
-        /* Flush request/response buffers. */
+    // Dispatch loop
+    do {
+        // Flush request/response buffers
         nk_req_reset(&req);
-        nk_arena_reset(&req_arena);
-        nk_arena_reset(&res_arena);
+        nk_arena_reset(&reqArena);
+        nk_arena_reset(&resArena);
 
-        /* Wait for request to lights gpio entity. */
-        if (nk_transport_recv(&transport.base,
-                              &req.base_,
-                              &req_arena) != NK_EOK) {
-            fprintf(stderr, "nk_transport_recv error\n");
-        } else {
-            /**
-             * Handle received request by calling implementation Mode_impl
-             * of the requested Mode interface method.
-             */
-            traffic_light_LightsGPIO_entity_dispatch(&entity, &req.base_, &req_arena,
-                                        &res.base_, &res_arena);
+        nk_err_t err = NK_EOK;
+
+        // Wait for request
+        err = nk_transport_recv(&transport.base, &req.base_, &reqArena);
+        if (NK_EOK != err) {
+            fprintf(stderr, "%-16s [ERROR] nk_transport_recv: err=%d\n", EntityName, err);
+            continue;
         }
 
-        /* Send response. */
-        if (nk_transport_reply(&transport.base,
-                               &res.base_,
-                               &res_arena) != NK_EOK) {
-            fprintf(stderr, "nk_transport_reply error\n");
+        // Dispath request
+        err = LightsGPIO_entity_dispatch(&entity, &req.base_, &reqArena, &res.base_, &resArena);
+        if (NK_EOK != err) {
+            fprintf(stderr, "%-16s [ERROR] LightsGPIO_entity_dispatch: err=%d\n", EntityName, err);
+            continue;
         }
-    }
-    while (true);
+
+        // Send response
+        err = nk_transport_reply(&transport.base, &res.base_, &resArena);
+        if (NK_EOK != err) {
+            fprintf(stderr, "%-16s [ERROR] nk_transport_reply: err=%d\n", EntityName, err);
+            continue;
+        }
+
+    } while (true);
 
     return EXIT_SUCCESS;
 }

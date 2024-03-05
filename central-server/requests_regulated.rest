@@ -1,0 +1,42 @@
+### test request
+
+GET http://localhost:8081/test HTTP/1.1
+
+
+### request operation mode
+
+GET http://localhost:8081/mode/12345 HTTP/1.1
+
+
+### post unregulated mode "blink-yellow" - "blink-yellow" (OK)
+POST http://localhost:8081/manual HTTP/1.1
+content-type: application/json
+
+{
+    "mode": "unregulated", 
+    "direction_1": "blink-yellow", 
+    "direction_2": "blink-yellow"
+}
+
+### post regulated mode "green" - "red" (OK)
+POST http://localhost:8081/manual HTTP/1.1
+content-type: application/json
+
+{
+    "mode": "regulated", 
+    "direction_1": 5, 
+    "direction_2": 5
+}
+
+### post diagnostics status
+
+POST http://localhost:8081/diagnostics HTTP/1.1
+Content-Type: application/json
+
+{
+    "ControlSystem":   "0x00000001",
+    "Connector":       "0x22776f6c",
+    "CrossController": "0x00000002",
+    "LightsGPIO":      "0x00000000",
+    "Diagnostics":     "0x00000000"
+}
